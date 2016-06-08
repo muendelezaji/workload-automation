@@ -30,25 +30,96 @@ import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
+
 public class UiAutomation extends UxPerfUiAutomation {
 
     public static String TAG = "msword";
 
+    public static final int WAIT_TIMEOUT_1MS = 1000;
+    public static final int WAIT_TIMEOUT_5MS = 5000;
+    public static final String CLASS_BUTTON = "android.widget.Button";
+    public static final String CLASS_EDIT_TEXT = "android.widget.EditText";
+
     protected LinkedHashMap<String, Timer> results = new LinkedHashMap<String, Timer>();
     protected Timer timer = new Timer();
-    protected Bundle parameters;
     protected boolean dumpsysEnabled;
     protected String outputDir;
     protected String packageName;
     protected String packageID;
+    protected String documentName;
+    protected String loginEmail;
+    protected String loginPass;
 
     public void runUiAutomation() throws Exception {
-        parameters = getParams();
+        Bundle parameters = getParams();
         dumpsysEnabled = Boolean.parseBoolean(parameters.getString("dumpsys_enabled"));
         packageName = parameters.getString("package");
         outputDir = parameters.getString("output_dir");
         packageID = packageName + ":id/";
+        documentName = parameters.getString("document_name");
+        loginEmail = parameters.getString("login_email");
+        loginPass = parameters.getString("login_pass");
+        signIn();
+        if ("cloud".equalsIgnoreCase(parameters.getString("test_type"))) {
+            testCloudDocument();
+        } else {
+            testLocalDocument();
+        }
         writeResultsToFile(results, parameters.getString("output_file"));
+    }
+
+    public void testCloudDocument() throws Exception {
+    }
+
+    public void testLocalDocument() throws Exception {
+        // // skipWelcomeScreen();
+        // clickUiObject(BY_TEXT, "Skip", true);
+        openDocument(documentName);
+        // dismissTooltip();
+        clickUiObject(BY_TEXT, "Got it", CLASS_BUTTON);
+    }
+
+    protected void signIn() throws Exception {
+        // Initial setup time
+        waitForProgress(WAIT_TIMEOUT_5MS);
+        UiObject signInButton = new UiObject(new UiSelector().textContains("Sign in"));
+        if (signInButton.waitForExists(WAIT_TIMEOUT_5MS)) {
+            signInButton.clickAndWaitForNewWindow();
+        }
+        UiObject emailField = new UiObject(new UiSelector().className(CLASS_EDIT_TEXT));
+        emailField.clearTextField();
+        emailField.setText(loginEmail);
+        // clickUiObject(BY_TEXT, "Next", true);
+        UiObject nextButton = new UiObject(new UiSelector().className(CLASS_BUTTON));
+        waitForProgress(WAIT_TIMEOUT_5MS);
+        UiObject webview = new UiObject(new UiSelector().className("android.webkit.WebView"));
+        if (webview.waitForExists(WAIT_TIMEOUT_5MS)) {
+            // sign in
+            getUiDevice().pressEnter();
+            // getUiDevice().pressEnter();
+            UiObject passwordField = new UiObject(new UiSelector().className(CLASS_EDIT_TEXT).instance(2));
+            passwordField.setText(loginPass);
+            clickUiObject(BY_TEXT, "Sign in", CLASS_BUTTON, true);
+        }
+    }
+
+    public void openDocument(String document) throws Exception {
+        clickUiObject(BY_TEXT, "Open", true);
+        clickUiObject(BY_TEXT, "This device");
+        clickUiObject(BY_TEXT, "Documents");
+        clickUiObject(BY_TEXT, document, true);
+    }
+
+    private boolean waitForProgress(int timeout) throws Exception {
+        UiObject progress = new UiObject(new UiSelector().className("android.widget.ProgressBar"));
+        if (progress.exists()) {
+            return progress.waitUntilGone(timeout);
+        } else {
+            return false;
+        }
     }
 
 }
