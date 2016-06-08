@@ -79,13 +79,12 @@ class MsWord(AndroidUiAutoBenchmark):
 
     def initialize(self, context):
         super(MsWord, self).initialize(context)
-        self.logger.info('local_dir={}, device_dir={}, document_name={}'.format(self.local_dir, self.device_dir, self.document_name))
-        if self.test_type is 'local':
-            # push local document
+        # push local document
+        if self.test_type == 'local':
             for entry in os.listdir(self.local_dir):
                 if entry == self.document_name:
-                    self.device.push_file(path.join(self.local_dir, self.document_name),
-                                          path.join(self.device_dir, self.document_name),
+                    self.device.push_file(os.path.join(self.local_dir, self.document_name),
+                                          os.path.join(self.device_dir, self.document_name),
                                           timeout=60)
 
     def update_result(self, context):
@@ -116,8 +115,8 @@ class MsWord(AndroidUiAutoBenchmark):
 
     def finalize(self, context):
         super(MsWord, self).finalize(context)
-        if self.test_type is 'local':
-            # delete pushed document
+        # delete pushed document
+        if self.test_type == 'local':
             for entry in self.device.listdir(self.device_dir):
                 if entry == self.document_name:
-                    self.device.delete_file(path.join(self.device_dir, entry))
+                    self.device.delete_file(os.path.join(self.device_dir, entry))

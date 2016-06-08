@@ -20,6 +20,8 @@ import java.util.Map;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.SystemClock;
+import android.view.KeyEvent;
 
 // Import the uiautomator libraries
 import com.android.uiautomator.core.UiObject;
@@ -62,7 +64,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         documentName = parameters.getString("document_name");
         loginEmail = parameters.getString("login_email");
         loginPass = parameters.getString("login_pass");
-        signIn();
+        waitForProgress(WAIT_TIMEOUT_5MS * 2); // initial setup time
         if ("cloud".equalsIgnoreCase(parameters.getString("test_type"))) {
             testCloudDocument();
         } else {
@@ -72,38 +74,51 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void testCloudDocument() throws Exception {
+        // signIn();
     }
 
     public void testLocalDocument() throws Exception {
-        // // skipWelcomeScreen();
-        // clickUiObject(BY_TEXT, "Skip", true);
+        clickUiObject(BY_TEXT, "Skip", true); // skip welcome screen
         openDocument(documentName);
-        // dismissTooltip();
-        clickUiObject(BY_TEXT, "Got it", CLASS_BUTTON);
+        clickUiObject(BY_TEXT, "Got it", CLASS_BUTTON); // dismiss tooltip
     }
 
     protected void signIn() throws Exception {
-        // Initial setup time
-        waitForProgress(WAIT_TIMEOUT_5MS);
-        UiObject signInButton = new UiObject(new UiSelector().textContains("Sign in"));
-        if (signInButton.waitForExists(WAIT_TIMEOUT_5MS)) {
-            signInButton.clickAndWaitForNewWindow();
-        }
+        clickUiObject(BY_TEXT, "Sign in", true);
         UiObject emailField = new UiObject(new UiSelector().className(CLASS_EDIT_TEXT));
         emailField.clearTextField();
-        emailField.setText(loginEmail);
-        // clickUiObject(BY_TEXT, "Next", true);
-        UiObject nextButton = new UiObject(new UiSelector().className(CLASS_BUTTON));
+        emailField.setText(loginEmail + "@"); // deliberately incorrect
+        clickUiObject(BY_DESC, "Next", CLASS_BUTTON, true);
         waitForProgress(WAIT_TIMEOUT_5MS);
-        UiObject webview = new UiObject(new UiSelector().className("android.webkit.WebView"));
-        if (webview.waitForExists(WAIT_TIMEOUT_5MS)) {
-            // sign in
-            getUiDevice().pressEnter();
-            // getUiDevice().pressEnter();
-            UiObject passwordField = new UiObject(new UiSelector().className(CLASS_EDIT_TEXT).instance(2));
-            passwordField.setText(loginPass);
-            clickUiObject(BY_TEXT, "Sign in", CLASS_BUTTON, true);
+
+        // When login email is not valid, app is redirected to another screen
+        // to choose between Microsoft account or work-provided account
+        // Full text says: We're having trouble locating your account.
+        UiObject troublePage = new UiObject(new UiSelector().descriptionContains("trouble locating"));
+        if (!troublePage.exists()) {
+            throw new UiObjectNotFoundException("Not found: Login problem page");
         }
+        clickUiObject(BY_DESC, "Work account", CLASS_BUTTON, true);
+        waitForProgress(WAIT_TIMEOUT_5MS);
+        // Here the views inside the WebView can now be accessed as normal
+        UiObject webview = new UiObject(
+            new UiSelector().className("android.webkit.WebView").descriptionContains("Sign in"));
+        if (!webview.waitForExists(WAIT_TIMEOUT_5MS)) {
+            throw new UiObjectNotFoundException("Not found: Sign-in WebView");
+        }
+        emailField = new UiObject(new UiSelector().className(CLASS_EDIT_TEXT).instance(0));
+        int textLength = 30;
+        emailField.clickBottomRight();
+        while (textLength > 0) {
+            getUiDevice().pressDelete();
+            SystemClock.sleep(10);
+        }
+        getUiDevice().waitForIdle();
+        emailField.click();
+        emailField.setText(loginEmail);
+        UiObject passwordField = new UiObject(new UiSelector().className(CLASS_EDIT_TEXT).instance(1));
+        passwordField.setText(loginPass);
+        clickUiObject(BY_DESC, "Sign in", CLASS_BUTTON, true);
     }
 
     public void openDocument(String document) throws Exception {
