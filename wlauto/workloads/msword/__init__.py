@@ -29,12 +29,29 @@ class MsWord(AndroidUiAutoBenchmark):
     activity = 'com.microsoft.office.apphost.LaunchActivity'
     description = 'This is an placeholder description'
 
+    view = [
+        package + '/com.microsoft.office.word.WordActivity',
+        package + '/com.microsoft.office.apphost.LaunchActivity',
+    ]
+
     parameters = [
         Parameter('dumpsys_enabled', kind=bool, default=True,
                   description='''
                   If ``True``, dumpsys captures will be carried out during the test run.
                   The output is piped to log files which are then pulled from the phone.
                   '''),
+        Parameter('login_email', kind=str, mandatory=True,
+                  description='Office 365 account to use when logging into the application'),
+        Parameter('login_pass', kind=str, mandatory=True,
+                  description='Password associated with the Microsoft account'),
+        Parameter('test_type', kind=str, mandatory=True, allowed_values=['cloud', 'local'],
+                  description='''
+                  When set to ``local`` will use a locally pushed Microsoft Word document,
+                  when ``cloud`` will use a cloud-stored document. In both cases, the name
+                  of the document to push (or find) must be specified.
+                  '''),
+        Parameter('document_name', kind=str, mandatory=True,
+                  description='Document to push to device, or to find in the cloud storage'),
     ]
 
     instrumentation_log = '{}_instrumentation.log'.format(name)
@@ -43,6 +60,11 @@ class MsWord(AndroidUiAutoBenchmark):
         super(MsWord, self).__init__(device, **kwargs)
         self.run_timeout = 300
         self.output_file = os.path.join(self.device.working_directory, self.instrumentation_log)
+        self.local_dir = self.dependencies_directory
+        # Use Android documents folder as it is one of the default folders that appear in
+        # Word's file picker, and not WA's working directory. Improves test reliability by
+        # not having to navigate around the filesystem to locate pushed file.
+        self.device_dir = os.path.join(self.device.working_directory, '..', 'Documents')
 
     def validate(self):
         super(MsWord, self).validate()
@@ -50,10 +72,24 @@ class MsWord(AndroidUiAutoBenchmark):
         self.uiauto_params['output_dir'] = self.device.working_directory
         self.uiauto_params['output_file'] = self.output_file
         self.uiauto_params['dumpsys_enabled'] = self.dumpsys_enabled
+        self.uiauto_params['login_email'] = self.login_email
+        self.uiauto_params['login_pass'] = self.login_pass
+        self.uiauto_params['test_type'] = self.test_type
+        self.uiauto_params['document_name'] = self.document_name
+
+    def initialize(self, context):
+        super(MsWord, self).initialize(context)
+        self.logger.info('local_dir={}, device_dir={}, document_name={}'.format(self.local_dir, self.device_dir, self.document_name))
+        if self.test_type is 'local':
+            # push local document
+            for entry in os.listdir(self.local_dir):
+                if entry == self.document_name:
+                    self.device.push_file(path.join(self.local_dir, self.document_name),
+                                          path.join(self.device_dir, self.document_name),
+                                          timeout=60)
 
     def update_result(self, context):
         super(MsWord, self).update_result(context)
-
         if self.dumpsys_enabled:
             self.device.pull_file(self.output_file, context.output_directory)
             result_file = os.path.join(context.output_directory, self.instrumentation_log)
@@ -77,3 +113,11 @@ class MsWord(AndroidUiAutoBenchmark):
                 self.logger.debug("Pulling file '{}'".format(entry))
                 self.device.pull_file(os.path.join(self.device.working_directory, entry), context.output_directory)
                 self.device.delete_file(os.path.join(self.device.working_directory, entry))
+
+    def finalize(self, context):
+        super(MsWord, self).finalize(context)
+        if self.test_type is 'local':
+            # delete pushed document
+            for entry in self.device.listdir(self.device_dir):
+                if entry == self.document_name:
+                    self.device.delete_file(path.join(self.device_dir, entry))
