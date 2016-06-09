@@ -75,6 +75,9 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void testCloudDocument() throws Exception {
         // signIn();
+        clickUiObject(BY_TEXT, "Skip", true); // skip welcome screen
+        newDocument(documentName);
+        clickUiObject(BY_TEXT, "Got it", CLASS_BUTTON); // dismiss tooltip
     }
 
     public void testLocalDocument() throws Exception {
@@ -126,6 +129,14 @@ public class UiAutomation extends UxPerfUiAutomation {
         clickUiObject(BY_TEXT, "This device");
         clickUiObject(BY_TEXT, "Documents");
         clickUiObject(BY_TEXT, document, true);
+    }
+
+    protected void newDocument(String document) throws Exception {
+        clickUiObject(BY_TEXT, "New", true);
+        UiScrollable grid = new UiScrollable(new UiSelector().className("android.widget.GridView"));
+        grid.scrollIntoView(new UiSelector().textContains("Brochure")); // "Research paper"
+        clickUiObject(BY_TEXT, "Brochure", true);
+        waitForProgress(WAIT_TIMEOUT_5MS);
     }
 
     private boolean waitForProgress(int timeout) throws Exception {
