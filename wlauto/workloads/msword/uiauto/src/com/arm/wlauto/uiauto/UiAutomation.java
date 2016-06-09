@@ -40,8 +40,8 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public static String TAG = "msword";
 
-    public static final int WAIT_TIMEOUT_1MS = 1000;
-    public static final int WAIT_TIMEOUT_5MS = 5000;
+    public static final int WAIT_TIMEOUT_1SEC = 1000;
+    public static final int WAIT_TIMEOUT_5SEC = 5000;
     public static final String CLASS_BUTTON = "android.widget.Button";
     public static final String CLASS_EDIT_TEXT = "android.widget.EditText";
 
@@ -64,7 +64,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         documentName = parameters.getString("document_name");
         loginEmail = parameters.getString("login_email");
         loginPass = parameters.getString("login_pass");
-        waitForProgress(WAIT_TIMEOUT_5MS * 2); // initial setup time
+        waitForProgress(WAIT_TIMEOUT_5SEC * 2); // initial setup time
         // signIn();
         clickUiObject(BY_TEXT, "Skip", true); // skip welcome screen
         if ("create".equalsIgnoreCase(parameters.getString("test_type"))) {
@@ -81,7 +81,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         emailField.clearTextField();
         emailField.setText(loginEmail + "@"); // deliberately incorrect
         clickUiObject(BY_DESC, "Next", CLASS_BUTTON, true);
-        waitForProgress(WAIT_TIMEOUT_5MS);
+        waitForProgress(WAIT_TIMEOUT_5SEC);
 
         // When login email is not valid, app is redirected to another screen
         // to choose between Microsoft account or work-provided account
@@ -91,11 +91,11 @@ public class UiAutomation extends UxPerfUiAutomation {
             throw new UiObjectNotFoundException("Not found: Login problem page");
         }
         clickUiObject(BY_DESC, "Work account", CLASS_BUTTON, true);
-        waitForProgress(WAIT_TIMEOUT_5MS);
+        waitForProgress(WAIT_TIMEOUT_5SEC);
         // Here the views inside the WebView can now be accessed as normal
         UiObject webview = new UiObject(
             new UiSelector().className("android.webkit.WebView").descriptionContains("Sign in"));
-        if (!webview.waitForExists(WAIT_TIMEOUT_5MS)) {
+        if (!webview.waitForExists(WAIT_TIMEOUT_5SEC)) {
             throw new UiObjectNotFoundException("Not found: Sign-in WebView");
         }
         emailField = new UiObject(new UiSelector().className(CLASS_EDIT_TEXT).instance(0));
@@ -103,7 +103,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         emailField.clickBottomRight();
         while (textLength > 0) {
             getUiDevice().pressDelete();
-            SystemClock.sleep(10);
         }
         getUiDevice().waitForIdle();
         emailField.click();
@@ -115,7 +114,11 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void testCreateDocument() throws Exception {
         newDocument(documentName);
-        clickUiObject(BY_TEXT, "Got it", CLASS_BUTTON); // dismiss tooltip
+        // dismiss tooltip if it appears
+        UiObject tooltip = new UiObject(new UiSelector().textContains("Got it").className(CLASS_BUTTON));
+        if (tooltip.waitForExists(WAIT_TIMEOUT_1SEC)) {
+            tooltip.click();
+        }
         // TODO Edit the document
         // Close file
         clickUiObject(BY_ID, packageID + "Hamburger");
@@ -125,7 +128,12 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void testExistingDocument() throws Exception {
         openDocument(documentName);
-        clickUiObject(BY_TEXT, "Got it", CLASS_BUTTON); // dismiss tooltip
+        // dismiss tooltip if it appears
+        UiObject tooltip = new UiObject(new UiSelector().textContains("Got it").className(CLASS_BUTTON));
+        if (tooltip.waitForExists(WAIT_TIMEOUT_1SEC)) {
+            tooltip.click();
+        }
+        getUiDevice().pressBack();
     }
 
     public void openDocument(String document) throws Exception {
@@ -140,7 +148,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiScrollable grid = new UiScrollable(new UiSelector().className("android.widget.GridView"));
         grid.scrollIntoView(new UiSelector().textContains("Brochure")); // "Research paper"
         clickUiObject(BY_TEXT, "Brochure", true);
-        waitForProgress(WAIT_TIMEOUT_5MS);
+        waitForProgress(WAIT_TIMEOUT_5SEC);
     }
 
     private void deleteDocument(String document) throws Exception {

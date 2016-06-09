@@ -77,8 +77,8 @@ class MsWord(AndroidUiAutoBenchmark):
         self.uiauto_params['test_type'] = self.test_type
         self.uiauto_params['document_name'] = self.document_name
 
-    def initialize(self, context):
-        super(MsWord, self).initialize(context)
+    def setup(self, context):
+        super(MsWord, self).setup(context)
         # push existing document
         if self.test_type == 'existing':
             for entry in os.listdir(self.local_dir):
@@ -92,7 +92,7 @@ class MsWord(AndroidUiAutoBenchmark):
         if self.dumpsys_enabled:
             self.device.pull_file(self.output_file, context.output_directory)
             result_file = os.path.join(context.output_directory, self.instrumentation_log)
-
+            # pull instrumentation data
             with open(result_file, 'r') as wfh:
                 regex = re.compile(r'(?P<key>\w+)\s+(?P<value1>\d+)\s+(?P<value2>\d+)\s+(?P<value3>\d+)')
                 for line in wfh:
@@ -107,16 +107,14 @@ class MsWord(AndroidUiAutoBenchmark):
 
     def teardown(self, context):
         super(MsWord, self).teardown(context)
-        for entry in self.device.listdir(self.device.working_directory):
-            if entry.startswith(self.name) and entry.endswith(".log"):
-                self.logger.debug("Pulling file '{}'".format(entry))
-                self.device.pull_file(os.path.join(self.device.working_directory, entry), context.output_directory)
-                self.device.delete_file(os.path.join(self.device.working_directory, entry))
-
-    def finalize(self, context):
-        super(MsWord, self).finalize(context)
         # delete pushed document
         if self.test_type == 'existing':
             for entry in self.device.listdir(self.device_dir):
                 if entry == self.document_name:
                     self.device.delete_file(os.path.join(self.device_dir, entry))
+        # pull logs
+        for entry in self.device.listdir(self.device.working_directory):
+            if entry.startswith(self.name) and entry.endswith(".log"):
+                self.logger.debug("Pulling file '{}'".format(entry))
+                self.device.pull_file(os.path.join(self.device.working_directory, entry), context.output_directory)
+                self.device.delete_file(os.path.join(self.device.working_directory, entry))
