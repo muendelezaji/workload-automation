@@ -65,25 +65,14 @@ public class UiAutomation extends UxPerfUiAutomation {
         loginEmail = parameters.getString("login_email");
         loginPass = parameters.getString("login_pass");
         waitForProgress(WAIT_TIMEOUT_5MS * 2); // initial setup time
-        if ("cloud".equalsIgnoreCase(parameters.getString("test_type"))) {
-            testCloudDocument();
-        } else {
-            testLocalDocument();
-        }
-        writeResultsToFile(results, parameters.getString("output_file"));
-    }
-
-    public void testCloudDocument() throws Exception {
         // signIn();
         clickUiObject(BY_TEXT, "Skip", true); // skip welcome screen
-        newDocument(documentName);
-        clickUiObject(BY_TEXT, "Got it", CLASS_BUTTON); // dismiss tooltip
-    }
-
-    public void testLocalDocument() throws Exception {
-        clickUiObject(BY_TEXT, "Skip", true); // skip welcome screen
-        openDocument(documentName);
-        clickUiObject(BY_TEXT, "Got it", CLASS_BUTTON); // dismiss tooltip
+        if ("create".equalsIgnoreCase(parameters.getString("test_type"))) {
+            testCreateDocument();
+        } else {
+            testExistingDocument();
+        }
+        writeResultsToFile(results, parameters.getString("output_file"));
     }
 
     protected void signIn() throws Exception {
@@ -124,6 +113,21 @@ public class UiAutomation extends UxPerfUiAutomation {
         clickUiObject(BY_DESC, "Sign in", CLASS_BUTTON, true);
     }
 
+    public void testCreateDocument() throws Exception {
+        newDocument(documentName);
+        clickUiObject(BY_TEXT, "Got it", CLASS_BUTTON); // dismiss tooltip
+        // TODO Edit the document
+        // Close file
+        clickUiObject(BY_ID, packageID + "Hamburger");
+        clickUiObject(BY_TEXT, "Close", CLASS_BUTTON, true);
+        deleteDocument(documentName);
+    }
+
+    public void testExistingDocument() throws Exception {
+        openDocument(documentName);
+        clickUiObject(BY_TEXT, "Got it", CLASS_BUTTON); // dismiss tooltip
+    }
+
     public void openDocument(String document) throws Exception {
         clickUiObject(BY_TEXT, "Open", true);
         clickUiObject(BY_TEXT, "This device");
@@ -139,6 +143,18 @@ public class UiAutomation extends UxPerfUiAutomation {
         waitForProgress(WAIT_TIMEOUT_5MS);
     }
 
+    private void deleteDocument(String document) throws Exception {
+        // remove from front page
+        clickUiObject(BY_ID, packageID + "list_entry_commands_launcher_button", "android.widget.ToggleButton");
+        clickUiObject(BY_TEXT, "Remove from list");
+        // remove from device
+        clickUiObject(BY_TEXT, "Open", true);
+        clickUiObject(BY_TEXT, "This device");
+        clickUiObject(BY_TEXT, "Documents");
+        clickUiObject(BY_ID, packageID + "list_entry_commands_launcher_button", "android.widget.ToggleButton");
+        clickUiObject(BY_TEXT, "Delete", true);
+        clickUiObject(BY_TEXT, "Yes", CLASS_BUTTON);
+    }
     private boolean waitForProgress(int timeout) throws Exception {
         UiObject progress = new UiObject(new UiSelector().className("android.widget.ProgressBar"));
         if (progress.exists()) {

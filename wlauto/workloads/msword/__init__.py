@@ -44,14 +44,14 @@ class MsWord(AndroidUiAutoBenchmark):
                   description='Office 365 account to use when logging into the application'),
         Parameter('login_pass', kind=str, mandatory=True,
                   description='Password associated with the Microsoft account'),
-        Parameter('test_type', kind=str, mandatory=True, allowed_values=['cloud', 'local'],
+        Parameter('test_type', kind=str, mandatory=True, allowed_values=['create', 'existing'],
                   description='''
-                  When set to ``local`` will use a locally pushed Microsoft Word document,
-                  when ``cloud`` will use a cloud-stored document. In both cases, the name
-                  of the document to push (or find) must be specified.
+                  When set to ``existing`` will use a locally pushed Microsoft Word document.
+                  Using ``create`` will create a new document in the app. In both cases, the
+                  name of the document to push or create and save must be specified.
                   '''),
         Parameter('document_name', kind=str, mandatory=True,
-                  description='Document to push to device, or to find in the cloud storage'),
+                  description='Document to push to device, or name to save as when created in app'),
     ]
 
     instrumentation_log = '{}_instrumentation.log'.format(name)
@@ -79,8 +79,8 @@ class MsWord(AndroidUiAutoBenchmark):
 
     def initialize(self, context):
         super(MsWord, self).initialize(context)
-        # push local document
-        if self.test_type == 'local':
+        # push existing document
+        if self.test_type == 'existing':
             for entry in os.listdir(self.local_dir):
                 if entry == self.document_name:
                     self.device.push_file(os.path.join(self.local_dir, self.document_name),
@@ -116,7 +116,7 @@ class MsWord(AndroidUiAutoBenchmark):
     def finalize(self, context):
         super(MsWord, self).finalize(context)
         # delete pushed document
-        if self.test_type == 'local':
+        if self.test_type == 'existing':
             for entry in self.device.listdir(self.device_dir):
                 if entry == self.document_name:
                     self.device.delete_file(os.path.join(self.device_dir, entry))
