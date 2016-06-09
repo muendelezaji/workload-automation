@@ -114,7 +114,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void testCreateDocument() throws Exception {
         newDocument(documentName);
-        // dismiss tooltip if it appears
+        // Dismiss tooltip if it appears
         UiObject tooltip = new UiObject(new UiSelector().textContains("Got it").className(CLASS_BUTTON));
         if (tooltip.waitForExists(WAIT_TIMEOUT_1SEC)) {
             tooltip.click();
@@ -128,7 +128,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void testExistingDocument() throws Exception {
         openDocument(documentName);
-        // dismiss tooltip if it appears
+        // Dismiss tooltip if it appears
         UiObject tooltip = new UiObject(new UiSelector().textContains("Got it").className(CLASS_BUTTON));
         if (tooltip.waitForExists(WAIT_TIMEOUT_1SEC)) {
             tooltip.click();
@@ -149,13 +149,19 @@ public class UiAutomation extends UxPerfUiAutomation {
         grid.scrollIntoView(new UiSelector().textContains("Brochure")); // "Research paper"
         clickUiObject(BY_TEXT, "Brochure", true);
         waitForProgress(WAIT_TIMEOUT_5SEC);
+        // Rename document
+        clickUiObject(BY_ID, packageID + "DocTitlePortrait");
+        clickUiObject(BY_ID, packageID + "OfcActionButton1"); // the 'X' button to clear
+        UiObject nameField = getUiObjectByResourceId(packageID + "OfcEditText");
+        nameField.setText(document);
+        getUiDevice().pressEnter();
     }
 
     private void deleteDocument(String document) throws Exception {
-        // remove from front page
+        // Remove from front page document list
         clickUiObject(BY_ID, packageID + "list_entry_commands_launcher_button", "android.widget.ToggleButton");
         clickUiObject(BY_TEXT, "Remove from list");
-        // remove from device
+        // Remove from device
         clickUiObject(BY_TEXT, "Open", true);
         clickUiObject(BY_TEXT, "This device");
         clickUiObject(BY_TEXT, "Documents");
