@@ -42,8 +42,10 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public static final int WAIT_TIMEOUT_1SEC = 1000;
     public static final int WAIT_TIMEOUT_5SEC = 5000;
+    public static final int SCROLL_SWIPE_STEPS = 50;
     public static final String CLASS_BUTTON = "android.widget.Button";
     public static final String CLASS_EDIT_TEXT = "android.widget.EditText";
+    public static final String CLASS_TOGGLE_BUTTON = "android.widget.ToggleButton";
 
     protected LinkedHashMap<String, Timer> results = new LinkedHashMap<String, Timer>();
     protected Timer timer = new Timer();
@@ -64,6 +66,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         documentName = parameters.getString("document_name");
         loginEmail = parameters.getString("login_email");
         loginPass = parameters.getString("login_pass");
+        setScreenOrientation(ScreenOrientation.NATURAL);
         waitForProgress(WAIT_TIMEOUT_5SEC * 2); // initial setup time
         // signIn();
         clickUiObject(BY_TEXT, "Skip", true); // skip welcome screen
@@ -72,6 +75,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         } else {
             testExistingDocument();
         }
+        unsetScreenOrientation();
         writeResultsToFile(results, parameters.getString("output_file"));
     }
 
@@ -113,13 +117,41 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void testCreateDocument() throws Exception {
-        newDocument(documentName);
+        newDocument();
         // Dismiss tooltip if it appears
         UiObject tooltip = new UiObject(new UiSelector().textContains("Got it").className(CLASS_BUTTON));
         if (tooltip.waitForExists(WAIT_TIMEOUT_1SEC)) {
             tooltip.click();
         }
+
         // TODO Edit the document
+        // Change title
+        UiObject wrapper = getUiObjectByResourceId(packageID + "wordFastUIBindableView");
+        UiSelector genericView = new UiSelector().className("android.view.View");
+        // UiSelector titleWrapper = new UiSelector().resourceId(packageID + "wordFastUIBindableView").childSelector(
+        //     genericView.childSelector(
+        //     genericView.childSelector(
+        //     genericView.childSelector(
+        //     genericView).instance(1))));
+        // UiObject title = new UiObject((titleWrapper.childSelector(genericView).instance(3)).childSelector(genericView.instance(0)));
+        // title.setText("A Brochure");
+
+        // Formatting
+        UiScrollable toolbar = new UiScrollable(new UiSelector().className("android.widget.HorizontalScrollView"));
+        toolbar.setAsHorizontalList();
+        // UiScrollable toolbar = new UiScrollable(new UiSelector().resourceId(packageID + "contextualCommandBar"));
+        clickUiObject(BY_DESC, "Bold", CLASS_TOGGLE_BUTTON);
+        clickUiObject(BY_DESC, "Italic", CLASS_TOGGLE_BUTTON);
+        clickUiObject(BY_DESC, "Underline", CLASS_TOGGLE_BUTTON);
+        toolbar.scrollIntoView(new UiSelector().descriptionContains("Increase Indent").className(CLASS_BUTTON));
+
+        // Rename document
+        clickUiObject(BY_ID, packageID + "DocTitlePortrait");
+        clickUiObject(BY_ID, packageID + "OfcActionButton1"); // the 'X' button to clear
+        UiObject nameField = getUiObjectByResourceId(packageID + "OfcEditText");
+        nameField.setText(documentName);
+        getUiDevice().pressEnter();
+
         // Close file
         clickUiObject(BY_ID, packageID + "Hamburger");
         clickUiObject(BY_TEXT, "Close", CLASS_BUTTON, true);
@@ -133,6 +165,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         if (tooltip.waitForExists(WAIT_TIMEOUT_1SEC)) {
             tooltip.click();
         }
+        UiObject wrapper = getUiObjectByResourceId(packageID + "wordFastUIBindableView");
+        for (int i = 0; i < 2; i++) {
+            wrapper.swipeUp(SCROLL_SWIPE_STEPS);
+        }
+        for (int i = 0; i < 2; i++) {
+            wrapper.swipeDown(SCROLL_SWIPE_STEPS);
+        }
         getUiDevice().pressBack();
     }
 
@@ -143,29 +182,23 @@ public class UiAutomation extends UxPerfUiAutomation {
         clickUiObject(BY_TEXT, document, true);
     }
 
-    protected void newDocument(String document) throws Exception {
+    protected void newDocument() throws Exception {
         clickUiObject(BY_TEXT, "New", true);
         UiScrollable grid = new UiScrollable(new UiSelector().className("android.widget.GridView"));
         grid.scrollIntoView(new UiSelector().textContains("Brochure")); // "Research paper"
         clickUiObject(BY_TEXT, "Brochure", true);
         waitForProgress(WAIT_TIMEOUT_5SEC);
-        // Rename document
-        clickUiObject(BY_ID, packageID + "DocTitlePortrait");
-        clickUiObject(BY_ID, packageID + "OfcActionButton1"); // the 'X' button to clear
-        UiObject nameField = getUiObjectByResourceId(packageID + "OfcEditText");
-        nameField.setText(document);
-        getUiDevice().pressEnter();
     }
 
     private void deleteDocument(String document) throws Exception {
         // Remove from front page document list
-        clickUiObject(BY_ID, packageID + "list_entry_commands_launcher_button", "android.widget.ToggleButton");
+        clickUiObject(BY_ID, packageID + "list_entry_commands_launcher_button", CLASS_TOGGLE_BUTTON);
         clickUiObject(BY_TEXT, "Remove from list");
         // Remove from device
         clickUiObject(BY_TEXT, "Open", true);
         clickUiObject(BY_TEXT, "This device");
         clickUiObject(BY_TEXT, "Documents");
-        clickUiObject(BY_ID, packageID + "list_entry_commands_launcher_button", "android.widget.ToggleButton");
+        clickUiObject(BY_ID, packageID + "list_entry_commands_launcher_button", CLASS_TOGGLE_BUTTON);
         clickUiObject(BY_TEXT, "Delete", true);
         clickUiObject(BY_TEXT, "Yes", CLASS_BUTTON);
     }
