@@ -1,0 +1,11 @@
+# test_type = [create, existing]
+global:
+    iterations: 1
+workloads:
+    -   id: {{workload_id}}
+        name: msword
+        params:
+            test_type: {{test_type}}
+            document_name: {{document_name}}
+            login_email: {{login_email}}
+            login_pass: {{login_pass}}
