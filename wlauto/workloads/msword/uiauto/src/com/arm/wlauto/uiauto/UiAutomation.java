@@ -72,14 +72,15 @@ public class UiAutomation extends UxPerfUiAutomation {
         loginEmail = parameters.getString("login_email", "");
         loginPass = parameters.getString("login_pass", "");
         setScreenOrientation(ScreenOrientation.NATURAL);
+
+        // Welcome screen handling
         startLogger("welcome_screen_progress");
         waitForProgress(WAIT_TIMEOUT_5SEC * 6); // initial setup time (upto 30 sec)
         stopLogger("welcome_screen_progress");
-        // Sign-in disabled because there isn't a way to get the fields that's reliable enough for testing
-        // signIn();
         startLogger("welcome_screen_skip");
         clickUiObject(BY_TEXT, "Skip", true); // skip welcome screen
         stopLogger("welcome_screen_skip");
+
         if ("create".equalsIgnoreCase(parameters.getString("test_type"))) {
             testCreateDocument();
         } else {
@@ -87,43 +88,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
         unsetScreenOrientation();
         writeResultsToFile(results, parameters.getString("output_file"));
-    }
-
-    protected void signIn() throws Exception {
-        clickUiObject(BY_TEXT, "Sign in", true);
-        UiObject emailField = new UiObject(new UiSelector().className(CLASS_EDIT_TEXT));
-        emailField.clearTextField();
-        emailField.setText(loginEmail + "@"); // deliberately incorrect
-        clickUiObject(BY_DESC, "Next", CLASS_BUTTON, true);
-        waitForProgress(WAIT_TIMEOUT_5SEC);
-
-        // When login email is not valid, app is redirected to another screen
-        // to choose between Microsoft account or work-provided account
-        // Full text says: We're having trouble locating your account.
-        UiObject troublePage = new UiObject(new UiSelector().descriptionContains("trouble locating"));
-        if (!troublePage.exists()) {
-            throw new UiObjectNotFoundException("Not found: Login problem page");
-        }
-        clickUiObject(BY_DESC, "Work account", CLASS_BUTTON, true);
-        waitForProgress(WAIT_TIMEOUT_5SEC);
-        // Here the views inside the WebView can now be accessed as normal
-        UiObject webview = new UiObject(
-            new UiSelector().className("android.webkit.WebView").descriptionContains("Sign in"));
-        if (!webview.waitForExists(WAIT_TIMEOUT_5SEC)) {
-            throw new UiObjectNotFoundException("Not found: Sign-in WebView");
-        }
-        emailField = new UiObject(new UiSelector().className(CLASS_EDIT_TEXT).instance(0));
-        int textLength = 30;
-        emailField.clickBottomRight();
-        while (textLength > 0) {
-            getUiDevice().pressDelete();
-        }
-        getUiDevice().waitForIdle();
-        emailField.click();
-        emailField.setText(loginEmail);
-        UiObject passwordField = new UiObject(new UiSelector().className(CLASS_EDIT_TEXT).instance(1));
-        passwordField.setText(loginPass);
-        clickUiObject(BY_DESC, "Sign in", CLASS_BUTTON, true);
     }
 
     public void testCreateDocument() throws Exception {
@@ -136,9 +100,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
         stopLogger("document_tooltip");
 
-        // show command palette
-        UiObject paletteToggle = new UiObject(new UiSelector().resourceId(packageID + "paletteToggleButton"));
-
         // Rename document
         startLogger("rename_document");
         clickUiObject(BY_ID, packageID + "DocTitlePortrait");
@@ -148,19 +109,22 @@ public class UiAutomation extends UxPerfUiAutomation {
         getUiDevice().pressEnter();
         stopLogger("rename_document");
 
+        // show command palette
         findText("Newsletter Title");
         startLogger("palette_toggle_show");
+        UiObject paletteToggle = new UiObject(new UiSelector().resourceId(packageID + "paletteToggleButton"));
         paletteToggle.click();
         stopLogger("palette_toggle_show");
 
         // Text formatting
         clickUiObject(BY_DESC, "Bold", CLASS_TOGGLE_BUTTON);
-        UiObject undoButton = clickUiObject(BY_DESC, "Undo", CLASS_BUTTON);
+        clickUiObject(BY_DESC, "Undo", CLASS_BUTTON);
         startLogger("format_bold_italic_underline");
         clickUiObject(BY_DESC, "Bold", CLASS_TOGGLE_BUTTON);
         clickUiObject(BY_DESC, "Italic", CLASS_TOGGLE_BUTTON);
         clickUiObject(BY_DESC, "Underline", CLASS_TOGGLE_BUTTON);
         stopLogger("format_bold_italic_underline");
+
         // Font size
         UiObject fontSize = new UiObject(new UiSelector().resourceId(packageID + "fsComboBoxButton").instance(1));
         startLogger("format_font_size_menu");
@@ -170,9 +134,10 @@ public class UiAutomation extends UxPerfUiAutomation {
         list.scrollIntoView(new UiSelector().textContains("36"));
         stopLogger("format_font_size_menu");
         startLogger("format_font_size_action");
-        // Colours
         clickUiObject(BY_TEXT, "36", CLASS_BUTTON, true);
         stopLogger("format_font_size_action");
+
+        // Colours
         startLogger("format_font_colour");
         clickUiObject(BY_DESC, "Font Colour", CLASS_TOGGLE_BUTTON);
         clickUiObject(BY_DESC, "Red", true);
@@ -212,7 +177,6 @@ public class UiAutomation extends UxPerfUiAutomation {
             startLogger("doc_scroll_down_" + i);
             getUiDevice().pressKeyCode(KeyEvent.KEYCODE_PAGE_DOWN);
             stopLogger("doc_scroll_down_" + i);
-            // SystemClock.sleep(SCROLL_WAIT_TIME_MS);
         }
 
         // show command palette
@@ -225,7 +189,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         paletteToggle.click();
         stopLogger("palette_toggle_show");
         clickUiObject(BY_ID, packageID + "ActiveTabButton");
-
         startLogger("insert_shape_menu");
         clickUiObject(BY_TEXT, "Insert", CLASS_BUTTON);
         clickUiObject(BY_TEXT, "Shapes", CLASS_TOGGLE_BUTTON);
@@ -236,6 +199,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         startLogger("insert_shape_action");
         clickUiObject(BY_DESC, "Rectangle", true);
         stopLogger("insert_shape_action");
+
         // Edit shape
         startLogger("insert_shape_edit_fill");
         clickUiObject(BY_DESC, "Fill", CLASS_TOGGLE_BUTTON);
@@ -281,7 +245,6 @@ public class UiAutomation extends UxPerfUiAutomation {
             startLogger("doc_scroll_up_" + i);
             getUiDevice().pressKeyCode(KeyEvent.KEYCODE_PAGE_UP);
             stopLogger("doc_scroll_up_" + i);
-            // SystemClock.sleep(SCROLL_WAIT_TIME_MS);
         }
         getUiDevice().pressBack();
     }

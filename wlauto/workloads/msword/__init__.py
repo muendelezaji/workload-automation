@@ -21,11 +21,12 @@ import time
 from wlauto import AndroidUiAutoBenchmark, Parameter
 
 
+__version__ = '0.1.0'
+
 class MsWord(AndroidUiAutoBenchmark):
 
     name = 'msword'
     package = 'com.microsoft.office.word'
-    # version = '16.0.6925.1017'
     activity = 'com.microsoft.office.apphost.LaunchActivity'
     description = '''
     A workload to perform standard productivity tasks with Microsoft Word. The workload carries
@@ -36,8 +37,9 @@ class MsWord(AndroidUiAutoBenchmark):
 
     Test description:
     1. The workload is split into two main scenarios:
-       - A. a Microsoft Word file is copied on to the device to test scrolling navigation,
-       - B. a new file is created in the application and basic editing performed.
+       - (A) copying a Microsoft Word file on to the device and adding an image to the file,
+             as well as scrolling and navigation tests.
+       - (B) creating a new file inside the application and performing some editing tasks.
     2. The application is started in offline access mode
     3. For scenario A, a simple navigation test is performed on the file, scrolling to the end,
        inserting a shape and an image into the file, modifying their colour and style, and finally
