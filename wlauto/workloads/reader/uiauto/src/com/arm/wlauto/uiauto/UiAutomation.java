@@ -215,7 +215,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject pageView = getUiObjectByResourceId("com.adobe.reader:id/pageView",
                                                     "android.widget.RelativeLayout");
         for (int i = 0; i < searchStrings.length; i++) {
-            timingResults.put(String.format(testTag + "_" + i),
+            timingResults.put(String.format(testTag + "_" + (i + 1)),
                                             searchTest(searchStrings[i]));
         }
 

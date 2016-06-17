@@ -39,17 +39,24 @@ class Reader(AndroidUiAutoBenchmark):
 
     Test description:
 
-    1. Open the application and sign in to an Adobe Cloud account over wifi
-    2. Select the local files browser list - a test measuring the time taken to navigate through the
-       menus and for the list to be created.
-    3. Search for a specific file from within the - a test measuring the entry of a search string
-       and time taken to locate the document within the file list.
-    4. Open the selected file - a test measuring the time taken to open the document and present
-       within a new view.
-    5. Gestures test - measurement of fps, jank and other frame statistics, via dumpsys, for swipe
-       and pinch gestures.
-    6. Search test - a test measuring the time taken to search a large 100+ page mixed content
-       document for specific strings.  Steps 2-4 are repeated to open the Cortex M4 manual.
+    1. Open a local file on the device.  The following steps are instrumented:
+        1. Select the local files list menu
+        2. Select the search button
+        2. Search for a specific file from within the list
+        3. Open the selected file
+    2. Gestures test - measurements of fps, jank and other frame statistics, via dumpsys, are
+       captured for the following swipe and pinch gestures:
+        1. Swipe down across the central 50% of the screen in 200 x 5ms steps
+        2. Swipe up across the central 50% of the screen in 200 x 5ms steps
+        3. Swipe right from the edge of the screen in 50 x 5ms steps
+        4. Swipe left from the edge of the screen  in 50 x 5ms steps
+        5. Pinch out 50% in 100 x 5ms steps
+        6. Pinch In 50% in 100 x 5ms steps
+    3. Repeat the open file step 1.
+    4. Search test - a test measuring the time taken to search a large 100+ page mixed content
+       document for specific strings.
+        1. Search document_name for first_search_word
+        2. Search document_name for second_search_word
     """
 
     parameters = [
