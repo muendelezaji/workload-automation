@@ -21,6 +21,7 @@ import android.os.Bundle;
 import com.android.uiautomator.core.UiObject;
 import com.android.uiautomator.core.UiObjectNotFoundException;
 import com.android.uiautomator.core.UiSelector;
+import com.android.uiautomator.core.UiWatcher;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
@@ -55,6 +56,10 @@ public class UiAutomation extends UxPerfUiAutomation {
         openMyLibrary();
         searchForBook(bookTitle);
 
+        UiWatcher pageSyncPopUpWatcher = createPopUpWatcher();
+        registerWatcher("pageSyncPopUp", pageSyncPopUpWatcher);
+        runWatchers();
+
         selectBook(0); // Select the first book
         gesturesTest();
         selectRandomChapter();
@@ -64,10 +69,41 @@ public class UiAutomation extends UxPerfUiAutomation {
         switchPageStyles();
         aboutBook();
 
+        removeWatcher("pageSyncPop");
         pressBack();
         unsetScreenOrientation();
 
         writeResultsToFile(timingResults, parameters.getString("output_file"));
+    }
+
+    // Creates a watcher for when a pop up warning appears when pages are out
+    // of sync across multiple devices.
+    private UiWatcher createPopUpWatcher() throws Exception {
+        UiWatcher pageSyncPopUpWatcher = new UiWatcher() {
+
+            @Override
+            public boolean checkForCondition() {
+                UiObject popUpDialogue =
+                    new UiObject(new UiSelector().resourceId("android:id/message")
+                                                 .textStartsWith("You're on page"));
+
+                // Don't sync and stay on the current page
+                if (popUpDialogue.exists()) {
+                    try {
+                        UiObject stayOnPage = new UiObject(new UiSelector()
+                                .className("android.widget.Button")
+                                .text("Yes"));
+                        stayOnPage.click();
+                    } catch (UiObjectNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                    return popUpDialogue.waitUntilGone(viewTimeout);
+                }
+                return false;
+            }
+        };
+
+        return pageSyncPopUpWatcher;
     }
 
     private void dismissSync() throws Exception {
