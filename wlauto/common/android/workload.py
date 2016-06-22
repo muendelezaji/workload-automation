@@ -171,6 +171,11 @@ class ApkWorkload(Workload):
                   If set to ``False``, this will prevent WA from clearing package
                   data for this workload prior to running it.
                   '''),
+        Parameter('check_apk_abi', kind=bool, default=False,
+                  description='''
+                  If ``True``, workload will check that the APK matches the target
+                  device ABI, otherwise any APK found will be used.
+                  '''),
     ]
 
     def __init__(self, device, _call_super=True, **kwargs):
@@ -181,14 +186,25 @@ class ApkWorkload(Workload):
         self.logcat_log = None
 
     def init_resources(self, context):
+        # Get APK for the correct device ABI from dependencies folder if requested
         self.apk_file = context.resolver.get(wlauto.common.android.resources.ApkFile(self),
                                              version=getattr(self, 'version', None),
+                                             check_abi=getattr(self, 'check_apk_abi', False),
                                              strict=self.check_apk)
 
     def validate(self):
         if self.check_apk:
             if not self.apk_file:
                 raise WorkloadError('No APK file found for workload {}.'.format(self.name))
+
+            # If workload specifies version, ensure APK version is the expected one
+            if getattr(self, 'version', None):
+                host_version = ApkInfo(self.apk_file).version_name
+                self.logger.debug('workload.version={}, host_version={}'.format(self.version, host_version))
+                if self.version != host_version:
+                    message = 'APK dependency version mismatch. Required: {}; Found: {}'
+                    raise WorkloadError(message.format(self.version, host_version))
+
         else:
             if self.force_install:
                 raise ConfigError('force_install cannot be "True" when check_apk is set to "False".')

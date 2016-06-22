@@ -45,6 +45,9 @@ class PackageFileGetter(ResourceGetter):
     Looks for exactly one file with the specified extension in the owner's directory. If a version
     is specified on invocation of get, it will filter the discovered file based on that version.
     Versions are treated as case-insensitive.
+    If an ABI is specified in the resource request, then the getter will try to locate the file in
+    the ABI-specific folder in the form ``<root>/<file_extension>/<abi>/<filename>``. Where ``root``
+    is the base resource location e.g. ``~/.workload_automation/dependencies/<extension_name>``
     """
 
     extension = None
@@ -54,6 +57,9 @@ class PackageFileGetter(ResourceGetter):
 
     def get(self, resource, **kwargs):
         resource_dir = os.path.dirname(sys.modules[resource.owner.__module__].__file__)
+        if self.extension == 'apk':
+            check_abi = kwargs.get('check_abi', False)
+            resource_dir = get_abi_specific_path(resource, resource_dir, self.extension, enforce=check_abi)
         version = kwargs.get('version')
         return get_from_location_by_extension(resource, resource_dir, self.extension, version)
 
@@ -61,9 +67,14 @@ class PackageFileGetter(ResourceGetter):
 class EnvironmentFileGetter(ResourceGetter):
 
     name = 'environment_file'
-    description = """Looks for exactly one file with the specified extension in the owner's directory. If a version
+    description = """
+    Looks for exactly one file with the specified extension in the owner's directory. If a version
     is specified on invocation of get, it will filter the discovered file based on that version.
-    Versions are treated as case-insensitive."""
+    Versions are treated as case-insensitive.
+    If an ABI is specified in the resource request, then the getter will try to locate the file in
+    the ABI-specific folder in the form ``<root>/<file_extension>/<abi>/<filename>``. Where ``root``
+    is the base resource location e.g. ``~/.workload_automation/dependencies/<extension_name>``
+    """
 
     extension = None
 
@@ -72,6 +83,9 @@ class EnvironmentFileGetter(ResourceGetter):
 
     def get(self, resource, **kwargs):
         resource_dir = resource.owner.dependencies_directory
+        if self.extension == 'apk':
+            check_abi = kwargs.get('check_abi', False)
+            resource_dir = get_abi_specific_path(resource, resource_dir, self.extension, enforce=check_abi)
         version = kwargs.get('version')
         return get_from_location_by_extension(resource, resource_dir, self.extension, version)
 
@@ -416,6 +430,10 @@ class RemoteFilerGetter(ResourceGetter):
         if resource.owner:
             remote_path = os.path.join(self.remote_path, resource.owner.name)
             local_path = os.path.join(settings.environment_root, '__filer', resource.owner.dependencies_directory)
+            if resource.name == 'apk':
+                check_abi = kwargs.get('check_abi', False)
+                local_path = get_abi_specific_path(resource, local_path, resource.name, enforce=check_abi)
+            self.logger.debug('resource={}, version={}, remote_path={}, local_path={}'.format(resource, version, remote_path, local_path))
             return self.try_get_resource(resource, version, remote_path, local_path)
         else:
             result = None
@@ -505,3 +523,16 @@ def get_owner_path(resource):
         return os.path.join(os.path.dirname(__base_filepath), 'common')
     else:
         return os.path.dirname(sys.modules[resource.owner.__module__].__file__)
+
+
+def get_abi_specific_path(resource, base_dir, extension, enforce=False):
+    # Note: Using device.get_abi() method instead of the property device.abi property
+    # The property is not yet set or available at this point in the execution flow
+    abi_dir = os.path.join(base_dir, extension, resource.owner.device.get_abi())
+    if enforce:
+        return abi_dir # Only if explicitly requested to enforce the resource ABI check
+    else:
+        # Otherwise for backwards compatibility, default to previous behaviour and log the event
+        message = 'Resource {} not found in {}. Defaulting to {}'
+        logging.getLogger('ResourceResolver').debug(message.format(resource, abi_dir, base_dir))
+        return base_dir

@@ -108,6 +108,15 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
     def abi(self):
         return self.getprop()['ro.product.cpu.abi'].split('-')[0]
 
+    """
+    Returns the ABI for this device.
+    This is the same as the ``abi`` property except it does not rely on the ``_is_ready`` flag
+    being set, and thus can be run directly from the host console. Useful when we need to provide
+    ABI-specific handling during initialization before the property is set.
+    """
+    def get_abi(self):
+        return adb_shell(self.adb_name, 'getprop ro.product.cpu.abi').split('-')[0]
+
     @property
     def supported_eabi(self):
         props = self.getprop()
