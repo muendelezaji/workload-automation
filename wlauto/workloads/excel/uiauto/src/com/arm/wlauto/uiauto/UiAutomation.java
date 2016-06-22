@@ -200,7 +200,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     private void gesturesTest() throws Exception {
         String testTag = "gestures";
 
-        // Perform a range of swipe tests while browsing photo gallery
+        // Perform pinch tests on the current workbook
         LinkedHashMap<String, GestureTestParams> testParams = new LinkedHashMap<String, GestureTestParams>();
         testParams.put("pinch_out", new GestureTestParams(GestureType.PINCH, PinchType.OUT, 100, 50));
         testParams.put("pinch_in", new GestureTestParams(GestureType.PINCH, PinchType.IN, 100, 50));
