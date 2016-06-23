@@ -32,6 +32,7 @@ import com.android.uiautomator.core.UiObject;
 import com.android.uiautomator.core.UiObjectNotFoundException;
 import com.android.uiautomator.core.UiSelector;
 import com.android.uiautomator.core.UiDevice;
+import com.android.uiautomator.core.UiWatcher;
 import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 
 public class BaseUiAutomation extends UiAutomatorTestCase {
@@ -125,6 +126,18 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
             throw new TimeoutException(String.format("Timed out waiting for Logcat text \"%s\"",
                                                      searchText));
         }
+    }
+
+    public void registerWatcher(String name, UiWatcher watcher) {
+        UiDevice.getInstance().registerWatcher(name, watcher);
+    }
+
+    public void runWatchers() {
+        UiDevice.getInstance().runWatchers();
+    }
+
+    public void removeWatcher(String name) {
+        UiDevice.getInstance().removeWatcher(name);
     }
 
     public void pressEnter() {
