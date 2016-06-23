@@ -123,12 +123,14 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         UiObject openApp = new UiObject(new UiSelector().className("android.widget.TextView").text(appName));
 
-        // Scroll up toe make the application grid fill the screen
-        applicationGrid.scrollForward();
+        // On some devices the application_grid has many entries, se we have to swipe up to make
+        // sure all the entries are visable.  This will also stop entries at the bottom being
+        // obscured by the bottom action bar.
+        applicationGrid.swipeUp(10);
 
         while (!openApp.exists()) {
-            // In the rare case the grid is larger than the screen scroll forward
-            applicationGrid.scrollForward();
+            // In the rare case the grid is larger than the screen swipe up
+            applicationGrid.swipeUp(10);
         }
 
         openApp.clickAndWaitForNewWindow();
