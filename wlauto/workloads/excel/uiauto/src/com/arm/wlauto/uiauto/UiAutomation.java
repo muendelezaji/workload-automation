@@ -16,6 +16,7 @@
 package com.arm.wlauto.uiauto.excel;
 
 import android.os.Bundle;
+import android.view.KeyEvent;
 
 // Import the uiautomator libraries
 import com.android.uiautomator.core.UiObject;
@@ -48,15 +49,30 @@ public class UiAutomation extends UxPerfUiAutomation {
         confirmAccess();
         skipSignInView();
 
+        // ----------------------------------------------------------------
+        // Create simple workbook
+        // ----------------------------------------------------------------
         newFile();
-        createInTestFolder();
+        newWorkbook();
         selectBlankWorkbook();
         dismissToolTip();
         createTable();
-        gesturesTest();
-        searchTable();
         nameWorkbook();
+        pressBack();
 
+        // ----------------------------------------------------------------
+        // Load test workbook
+        // ----------------------------------------------------------------
+        if (Boolean.parseBoolean(parameters.getString("use_test_file"))) {
+            openWorkbook("wa_test.xlsx");
+            dismissToolTip();
+            calculateCells();
+            copyColumn();
+            searchTable("4");
+            gesturesTest();
+        }
+
+        pressBack();
         unsetScreenOrientation();
         writeResultsToFile(timingResults, parameters.getString("output_file"));
     }
@@ -71,7 +87,31 @@ public class UiAutomation extends UxPerfUiAutomation {
         newButton.click();
     }
 
-    private void createInTestFolder() throws Exception {
+    private void openWorkbook(final String filename) throws Exception {
+
+        String testTag = "open_workbook";
+        SurfaceLogger logger = new SurfaceLogger(testTag, parameters);
+
+        UiObject openButton = getUiObjectByText("Open", "android.widget.Button");
+        openButton.click();
+
+        navigateToTestFolder();
+
+        UiObject fileEntry = getUiObjectByText(filename, "android.widget.TextView");
+
+        logger.start();
+        fileEntry.click();
+
+        UiObject canvasContainer =
+            new UiObject(new UiSelector().resourceId("com.microsoft.office.powerpoint:id/CanvasContainer"));
+
+        canvasContainer.waitForExists(viewTimeout);
+
+        logger.stop();
+        timingResults.put(testTag, logger.result());
+    }
+
+    private void newWorkbook() throws Exception {
         UiObject docLocation =
             getUiObjectByText("This device > Documents", "android.widget.ToggleButton");
         docLocation.click();
@@ -80,7 +120,14 @@ public class UiAutomation extends UxPerfUiAutomation {
             getUiObjectByText("Select a different location...", "android.widget.TextView");
         selectLocation.click();
 
-        UiObject deviceLocation = getUiObjectByText("This device", "android.widget.TextView");
+        navigateToTestFolder();
+
+        UiObject selectButton = getUiObjectByText("Select", "android.widget.Button");
+        selectButton.click();
+    }
+
+    private void navigateToTestFolder() throws Exception {
+        UiObject deviceLocation = new UiObject(new UiSelector().text("This device"));
         deviceLocation.click();
 
         UiObject storageLocation =
@@ -99,9 +146,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
 
         folderName.click();
-
-        UiObject selectButton = getUiObjectByText("Select", "android.widget.Button");
-        selectButton.click();
     }
 
     private void selectBlankWorkbook() throws Exception {
@@ -163,7 +207,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         SurfaceLogger logger = new SurfaceLogger(testTag, parameters);
 
         highlightRow();
-
         logger.start();
 
         UiObject boldButton = getUiObjectByDescription("Bold", "android.widget.ToggleButton");
@@ -182,16 +225,83 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void formatTotal() throws Exception {
-        String testTag = "format_header";
+        String testTag = "format_total";
         SurfaceLogger logger = new SurfaceLogger(testTag, parameters);
 
         highlightRow();
-
         logger.start();
 
         UiObject fontColorButton = getUiObjectByText("Font Colour", "android.widget.Button");
         fontColorButton.click();
         pressBack();
+
+        logger.stop();
+        timingResults.put(testTag, logger.result());
+    }
+
+    private void clickColumnHeader() throws Exception {
+        UiObject headerCell =
+            new UiObject(new UiSelector().resourceId("com.microsoft.office.excel:id/mainCanvas")
+                                         .childSelector(new UiSelector().index(0)
+                                         .childSelector(new UiSelector().index(0)
+                                         .childSelector(new UiSelector().index(2)
+                                         .childSelector(new UiSelector().index(2)
+                                         .childSelector(new UiSelector().index(0)
+                                         .childSelector(new UiSelector().index(0))))))));
+        headerCell.click();
+    }
+
+    private UiObject getCellBox() throws Exception {
+        UiObject cellBox =
+            new UiObject(new UiSelector().resourceId("com.microsoft.office.excel:id/mainCanvas")
+                                         .childSelector(new UiSelector().index(0)
+                                         .childSelector(new UiSelector().index(0)
+                                         .childSelector(new UiSelector().index(1)
+                                         .childSelector(new UiSelector().index(0)
+                                         .childSelector(new UiSelector().index(2)
+                                         .childSelector(new UiSelector().index(2))))))));
+        return cellBox;
+    }
+
+    private void copyColumn() throws Exception {
+        String testTag = "copy_data_column";
+
+        SurfaceLogger logger = new SurfaceLogger(testTag, parameters);
+        logger.start();
+
+        clickColumnHeader();
+        UiObject copyButton = getUiObjectByDescription("Copy", "android.widget.Button");
+        copyButton.click();
+
+        UiObject sheet2 = getUiObjectByText("Sheet2", "android.widget.TextView");
+        sheet2.click();
+
+        getCellBox().click();
+        UiObject pasteButton = getUiObjectByDescription("Paste", "android.widget.Button");
+        pasteButton.click();
+
+        logger.stop();
+        timingResults.put(testTag, logger.result());
+
+        getUiDevice().waitForIdle();
+    }
+
+    private void calculateCells() throws Exception {
+        String testTag = "calculate_cells";
+
+        // log cumulative results
+        SurfaceLogger logger = new SurfaceLogger(testTag, parameters);
+        logger.start();
+
+        String[] rootValues = {"2", "100", "3.14"};
+
+        UiObject enterButton =
+            new UiObject(new UiSelector().resourceId("com.microsoft.office.excel:id/enterButton"));
+
+        for (String value : rootValues) {
+            setCell(value);
+            enterButton.click();
+        }
 
         logger.stop();
         timingResults.put(testTag, logger.result());
@@ -226,12 +336,6 @@ public class UiAutomation extends UxPerfUiAutomation {
             logger.start();
 
             switch (type) {
-                case UIDEVICE_SWIPE:
-                    uiDeviceSwipe(dir, steps);
-                    break;
-                case UIOBJECT_SWIPE:
-                    uiObjectSwipe(view, dir, steps);
-                    break;
                 case PINCH:
                     uiObjectVertPinch(view, pinch, steps, percent);
                     break;
@@ -244,13 +348,21 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
     }
 
-    private void searchTable() throws Exception {
+    private void searchTable(final String searchTerm) throws Exception {
+        String testTag = "search_table";
+
+        SurfaceLogger logger = new SurfaceLogger(testTag, parameters);
+        logger.start();
+
         UiObject findButton = getUiObjectByDescription("Find", "android.widget.Button");
         findButton.click();
 
         UiObject editText = new UiObject(new UiSelector().className("android.widget.EditText"));
-        editText.setText("Onions");
+        editText.setText(searchTerm);
         pressEnter();
+
+        logger.stop();
+        timingResults.put(testTag, logger.result());
     }
 
     private void nameWorkbook() throws Exception {
@@ -259,20 +371,11 @@ public class UiAutomation extends UxPerfUiAutomation {
         docTitleName.setText("WA_Test_Book");
 
         pressEnter();
-        pressBack();
     }
 
     // Helper method for setting the currently selected cell's text content
     private void setCell(final String value) throws Exception {
-        UiObject cellBox =
-            new UiObject(new UiSelector().resourceId("com.microsoft.office.excel:id/mainCanvas")
-                                         .childSelector(new UiSelector().index(0)
-                                         .childSelector(new UiSelector().index(0)
-                                         .childSelector(new UiSelector().index(1)
-                                         .childSelector(new UiSelector().index(0)
-                                         .childSelector(new UiSelector().index(2)
-                                         .childSelector(new UiSelector().index(2))))))));
-        cellBox.setText(value);
+        getCellBox().setText(value);
         getUiDevice().pressDPadCenter();
     }
 

@@ -17,6 +17,7 @@ import os
 import re
 
 from wlauto import AndroidUiAutoBenchmark, Parameter
+from wlauto.exceptions import NotFoundError
 
 __version__ = '0.1.0'
 
@@ -28,20 +29,41 @@ class Excel(AndroidUiAutoBenchmark):
     activity = 'com.microsoft.office.apphost.LaunchActivity'
     description = """
     A workload to perform standard productivity tasks with Microsoft Excel.
-    This workload creates a very simple spreadsheet from a blank template.
+    This workload is split into two tests:
+
+    --- create ---
+    Prepares a basic workbook consisting of a simple table using formulas to
+    sum up two columns. The table rows and columns are then formatted.
 
     Test description:
-     1. Open Microsoft Excel
-     2. Dismisses sign in step and uses the app without an account.
-     3. Create a new spreadsheet (workbook)
-     4. Specifies storage location when saving presentation
-     5. Chooses a 'blank' template
-     6. Inputs data in rows and columns
-     7. Performs a SUM operation on the data
-     8. Formats the rows and columns
-     9. Gestures are performed to pinch zoom in and out of the workbook
-    10. A search of the workbook is performed for a preselected word
-    11. The workbook is renamed
+    1. Open Microsoft Excel
+    2. Dismisses sign in step and uses the app without an account
+    3. Create a new spreadsheet (workbook)
+    4. Specifies storage location when saving presentation
+    5. Chooses a 'blank' template
+    6. Inputs data in rows and columns
+    7. Performs a SUM operation on the data
+    8. Formats the rows and columns
+    9. The workbook is renamed
+
+    --- load ---
+    Loads a pre-existing test file for performance testing. A root cell in the
+    pre-existing test document is used to calculate the remaining cell values
+    within the sheet. The root cell value is changed to exercise the device
+    during cell recalculation. This test also copies columns rows, searches the
+    spreadsheet for a common data value and performs a series of gesture tests.
+
+    Test description:
+    1. Open the wa_test.xlsx workbook
+    2. Recalculates the sheets cell values based on three root values
+    3. Copies a single column from first sheet to second
+    4. A search of the current sheet is performed for a preselected value
+    5. Gestures are performed to pinch zoom in and out of the workbook
+
+    Note: This test is turned off by default. To run this test it must first be
+    enabled in an agenda file by setting 'use_test_file' parameter to True. In
+    addition, the pre-existing test file 'wa_test.xlsx' located in the same
+    directory as this file must be placed in the dependencies directory.
     """
 
     parameters = [
@@ -50,6 +72,11 @@ class Excel(AndroidUiAutoBenchmark):
                   If ``True``, dumpsys captures will be carried out during the
                   test run.  The output is piped to log files which are then
                   pulled from the phone.
+                  """),
+        Parameter('use_test_file', kind=bool, default=False,
+                  description="""
+                  If ``True``, pushes a preconfigured test file to the device
+                  used for measuring performance metrics.
                   """),
     ]
 
@@ -65,6 +92,26 @@ class Excel(AndroidUiAutoBenchmark):
         self.uiauto_params['output_dir'] = self.device.working_directory
         self.uiauto_params['output_file'] = self.output_file
         self.uiauto_params['dumpsys_enabled'] = self.dumpsys_enabled
+        self.uiauto_params['use_test_file'] = self.use_test_file
+
+    def push_file(self, extension):
+        entrys = [entry for entry in os.listdir(self.dependencies_directory) if entry.endswith(extension)]
+
+        # Check for workload dependencies before proceeding
+        if len(entrys) != 1:
+            raise NotFoundError("This workload requires one {} file in {}".format(extension,
+                                self.dependencies_directory))
+        else:
+            for entry in entrys:
+                self.device.push_file(os.path.join(self.dependencies_directory, entry),
+                                      os.path.join(self.device.working_directory, entry),
+                                      timeout=300)
+
+    def setup(self, context):
+        super(Excel, self).setup(context)
+
+        if self.use_test_file:
+            self.push_file(".xlsx")
 
     def update_result(self, context):
         super(Excel, self).update_result(context)
