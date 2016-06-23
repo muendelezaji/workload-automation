@@ -89,13 +89,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Replace whitespace and full stops within the filename
         String file = filename.replaceAll("\\.", "_").replaceAll("\\s+", "_");
 
-        timingResults.put(String.format(testTag + "_" + "1" + "_" + file), selectLocalFilesList());
+        timingResults.put(String.format(testTag + "_local_files"), selectLocalFilesList());
 
         // On some devices permissions to access local files occurs here rather than the earlier step
         confirmAccess();
-        timingResults.put(String.format(testTag + "_" + "2" + "_" + file), selectSearchFileButton());
-        timingResults.put(String.format(testTag + "_" + "3" + "_" + file), searchFileList(filename));
-        timingResults.put(String.format(testTag + "_" + "4" + "_" + file), openFileFromList(filename));
+        timingResults.put(String.format(testTag + "_search_button"), selectSearchFileButton());
+        timingResults.put(String.format(testTag + "_search_files"), searchFileList(filename));
+        timingResults.put(String.format(testTag + "_from_list"), openFileFromList(filename));
     }
 
     private Timer selectLocalFilesList() throws Exception {
@@ -157,12 +157,12 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         // Perform a range of swipe tests at different speeds and on different views
         LinkedHashMap<String, GestureTestParams> testParams = new LinkedHashMap<String, GestureTestParams>();
-        testParams.put("1", new GestureTestParams(GestureType.UIDEVICE_SWIPE, Direction.DOWN, 200));
-        testParams.put("2", new GestureTestParams(GestureType.UIDEVICE_SWIPE, Direction.UP, 200));
-        testParams.put("3", new GestureTestParams(GestureType.UIOBJECT_SWIPE, Direction.RIGHT, 50));
-        testParams.put("4", new GestureTestParams(GestureType.UIOBJECT_SWIPE, Direction.LEFT, 50));
-        testParams.put("5", new GestureTestParams(GestureType.PINCH, PinchType.OUT, 100, 50));
-        testParams.put("6", new GestureTestParams(GestureType.PINCH, PinchType.IN, 100, 50));
+        testParams.put("swipe_down", new GestureTestParams(GestureType.UIDEVICE_SWIPE, Direction.DOWN, 200));
+        testParams.put("swipe_up", new GestureTestParams(GestureType.UIDEVICE_SWIPE, Direction.UP, 200));
+        testParams.put("swipe_right", new GestureTestParams(GestureType.UIOBJECT_SWIPE, Direction.RIGHT, 50));
+        testParams.put("swipe_left", new GestureTestParams(GestureType.UIOBJECT_SWIPE, Direction.LEFT, 50));
+        testParams.put("pinch_out", new GestureTestParams(GestureType.PINCH, PinchType.OUT, 100, 50));
+        testParams.put("pinch_in", new GestureTestParams(GestureType.PINCH, PinchType.IN, 100, 50));
 
         Iterator<Entry<String, GestureTestParams>> it = testParams.entrySet().iterator();
 
@@ -215,8 +215,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject pageView = getUiObjectByResourceId("com.adobe.reader:id/pageView",
                                                     "android.widget.RelativeLayout");
         for (int i = 0; i < searchStrings.length; i++) {
-            timingResults.put(String.format(testTag + "_" + (i + 1)),
-                                            searchTest(searchStrings[i]));
+            String runName = (i == 0) ? "first_word" : "second_word";
+            timingResults.put(String.format(testTag + "_" + runName), searchTest(searchStrings[i]));
         }
 
         exitDocument();
