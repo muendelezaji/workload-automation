@@ -40,8 +40,6 @@ import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
 
 public class UiAutomation extends UxPerfUiAutomation {
 
-    public static String TAG = "msword";
-
     public static final int WAIT_TIMEOUT_5SEC = 5000;
     public static final int SCROLL_WAIT_TIME_MS = 100;
     public static final int SCROLL_SWIPE_COUNT = 10;
@@ -58,7 +56,6 @@ public class UiAutomation extends UxPerfUiAutomation {
     protected String outputDir;
     protected String packageName;
     protected String packageID;
-    protected String documentName;
     protected String loginEmail;
     protected String loginPass;
 
@@ -68,7 +65,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         packageName = parameters.getString("package");
         outputDir = parameters.getString("output_dir");
         packageID = packageName + ":id/";
-        documentName = parameters.getString("document_name");
         loginEmail = parameters.getString("login_email", "");
         loginPass = parameters.getString("login_pass", "");
         setScreenOrientation(ScreenOrientation.NATURAL);
@@ -80,50 +76,52 @@ public class UiAutomation extends UxPerfUiAutomation {
         startLogger("welcome_screen_skip");
         clickUiObject(BY_TEXT, "Skip", true); // skip welcome screen
         stopLogger("welcome_screen_skip");
-
-        if ("create".equalsIgnoreCase(parameters.getString("test_type"))) {
-            testCreateDocument();
-        } else {
-            testExistingDocument();
+        // Run the main tests
+        if (Boolean.parseBoolean(parameters.getString("use_test_file"))) {
+            testExistingDocument(parameters.getString("test_file"));
         }
+        testCreateDocument("UX-Perf-Word");
+
         unsetScreenOrientation();
         writeResultsToFile(results, parameters.getString("output_file"));
     }
 
-    public void testCreateDocument() throws Exception {
+    public void testCreateDocument(String documentName) throws Exception {
         newDocument("Newsletter");
         // Dismiss tooltip if it appears
         UiObject tooltip = new UiObject(new UiSelector().textContains("Got it").className(CLASS_BUTTON));
-        startLogger("document_tooltip");
+        startLogger("new_doc_close_tooltip");
         if (tooltip.waitForExists(WAIT_TIMEOUT_5SEC)) {
             tooltip.click();
         }
-        stopLogger("document_tooltip");
+        stopLogger("new_doc_close_tooltip");
 
         // Rename document
-        startLogger("rename_document");
+        startLogger("new_doc_rename");
         clickUiObject(BY_ID, packageID + "DocTitlePortrait");
         clickUiObject(BY_ID, packageID + "OfcActionButton1"); // the 'X' button to clear
         UiObject nameField = getUiObjectByResourceId(packageID + "OfcEditText");
         nameField.setText(documentName);
         getUiDevice().pressEnter();
-        stopLogger("rename_document");
+        stopLogger("new_doc_rename");
 
         // show command palette
         findText("Newsletter Title");
-        startLogger("palette_toggle_show");
+        startLogger("new_doc_palette_show");
         UiObject paletteToggle = new UiObject(new UiSelector().resourceId(packageID + "paletteToggleButton"));
         paletteToggle.click();
-        stopLogger("palette_toggle_show");
+        stopLogger("new_doc_palette_show");
+        clickUiObject(BY_ID, packageID + "ActiveTabButton");
+        clickUiObject(BY_TEXT, "Home", CLASS_BUTTON);
 
         // Text formatting
         clickUiObject(BY_DESC, "Bold", CLASS_TOGGLE_BUTTON);
         clickUiObject(BY_DESC, "Undo", CLASS_BUTTON);
-        startLogger("format_bold_italic_underline");
+        startLogger("format_font_style");
         clickUiObject(BY_DESC, "Bold", CLASS_TOGGLE_BUTTON);
         clickUiObject(BY_DESC, "Italic", CLASS_TOGGLE_BUTTON);
         clickUiObject(BY_DESC, "Underline", CLASS_TOGGLE_BUTTON);
-        stopLogger("format_bold_italic_underline");
+        stopLogger("format_font_style");
 
         // Font size
         UiObject fontSize = new UiObject(new UiSelector().resourceId(packageID + "fsComboBoxButton").instance(1));
@@ -153,30 +151,30 @@ public class UiAutomation extends UxPerfUiAutomation {
         getUiDevice().pressBack();
 
         // Close file
-        startLogger("toggle_app_menu");
+        startLogger("new_doc_app_menu");
         clickUiObject(BY_ID, packageID + "Hamburger");
-        stopLogger("toggle_app_menu");
-        startLogger("close_document");
+        stopLogger("new_doc_app_menu");
+        startLogger("new_doc_close_file");
         clickUiObject(BY_TEXT, "Close", CLASS_BUTTON, true);
-        stopLogger("close_document");
+        stopLogger("new_doc_close_file");
         deleteDocuments();
     }
 
-    public void testExistingDocument() throws Exception {
+    public void testExistingDocument(String documentName) throws Exception {
         openDocument(documentName);
         // Dismiss tooltip if it appears
         UiObject tooltip = new UiObject(new UiSelector().textContains("Got it").className(CLASS_BUTTON));
-        startLogger("document_tooltip");
+        startLogger("open_doc_close_tooltip");
         if (tooltip.waitForExists(WAIT_TIMEOUT_5SEC)) {
             tooltip.click();
         }
-        stopLogger("document_tooltip");
+        stopLogger("open_doc_close_tooltip");
 
         // Scroll down the document
         for (int i = 0; i < SCROLL_SWIPE_COUNT; i++) {
-            startLogger("doc_scroll_down_" + i);
+            startLogger("scroll_down_" + i);
             getUiDevice().pressKeyCode(KeyEvent.KEYCODE_PAGE_DOWN);
-            stopLogger("doc_scroll_down_" + i);
+            stopLogger("scroll_down_" + i);
         }
 
         // show command palette
@@ -185,9 +183,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject hidePalette = new UiObject(new UiSelector().resourceId(packageID + "CommandPaletteHandle"));
 
         // Insert shape
-        startLogger("palette_toggle_show");
+        startLogger("insert_shape_palette_show");
         paletteToggle.click();
-        stopLogger("palette_toggle_show");
+        stopLogger("insert_shape_palette_show");
         clickUiObject(BY_ID, packageID + "ActiveTabButton");
         startLogger("insert_shape_menu");
         clickUiObject(BY_TEXT, "Insert", CLASS_BUTTON);
@@ -205,9 +203,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         clickUiObject(BY_DESC, "Fill", CLASS_TOGGLE_BUTTON);
         clickUiObject(BY_DESC, "Blue", true);
         stopLogger("insert_shape_edit_fill");
-        startLogger("palette_toggle_hide");
+        startLogger("insert_shape_palette_hide");
         hidePalette.click();
-        stopLogger("palette_toggle_hide");
+        stopLogger("insert_shape_palette_hide");
 
         // Insert image
         paletteToggle.click();
@@ -242,11 +240,12 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         // Scroll up the document
         for (int i = 0; i < SCROLL_SWIPE_COUNT; i++) {
-            startLogger("doc_scroll_up_" + i);
+            startLogger("scroll_up_" + i);
             getUiDevice().pressKeyCode(KeyEvent.KEYCODE_PAGE_UP);
-            stopLogger("doc_scroll_up_" + i);
+            stopLogger("scroll_up_" + i);
         }
         getUiDevice().pressBack();
+        waitForProgress(WAIT_TIMEOUT_5SEC); // Give the app a short while to settle down
     }
 
     public void openDocument(String documentName) throws Exception {
@@ -327,13 +326,13 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     protected void startLogger(String name) throws Exception {
-        logger = new SurfaceLogger(TAG + "_" + name, parameters);
+        logger = new SurfaceLogger(name, parameters);
         logger.start();
     }
 
     protected void stopLogger(String name) throws Exception {
         logger.stop();
-        results.put(TAG + "_" + name, logger.result());
+        results.put(name, logger.result());
     }
 
 }
