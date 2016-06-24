@@ -38,15 +38,18 @@ class Googleplaybooks(AndroidUiAutoBenchmark):
     and querying information about the book.
 
     Test description:
-    1. Open Google Play Books application
-    2. Dismisses sync operation (if applicable)
-    3. Searches for a book title
-    4. Gestures are performed to swipe between pages and pinch zoom in and out of a page
-    5. Selects a random chapter from the navigation view
-    6. Selects a word in the centre of screen and adds a test note to the page
-    7. Removes the test note from the page (clean up)
-    8. Searches for the number of occurrences of a common word throughout the book
-    9. Uses the 'About this book' facility on the currently selected book
+     1. Open Google Play Books application
+     2. Dismisses sync operation (if applicable)
+     3. Opens 'My Library' contents
+     4. Searches for a book title
+     5. Selects a book
+     6. Gestures are performed to swipe between pages and pinch zoom in and out of a page
+     7. Selects a random chapter from the navigation view
+     8. Selects a word in the centre of screen and adds a test note to the page
+     9. Removes the test note from the page (clean up)
+    10. Searches for the number of occurrences of a common word throughout the book
+    11. Switches page styles from 'Day' to 'Night' to 'Sepia' and back to 'Day'
+    12. Uses the 'About this book' facility on the currently selected book
 
     NOTE: This workload requires a network connection (ideally, wifi) to run.
     """
