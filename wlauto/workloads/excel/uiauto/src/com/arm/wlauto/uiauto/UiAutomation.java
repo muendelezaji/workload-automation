@@ -83,8 +83,12 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void newFile() throws Exception {
-        UiObject newButton = getUiObjectByText("New", "android.widget.Button");
-        newButton.click();
+        UiObject newButton = new UiObject(new UiSelector().className("android.widget.Button").text("New"));
+
+        // Check for the existence of the new button on non-tablet devices
+        if (newButton.exists()) {
+            newButton.click();
+        }
     }
 
     private void openWorkbook(final String filename) throws Exception {
@@ -136,7 +140,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         storageLocation.click();
 
         UiScrollable scrollView =
-            new UiScrollable(new UiSelector().className("android.widget.ScrollView"));
+            new UiScrollable(new UiSelector().resourceId("com.microsoft.office.excel:id/docsui_browse_folder_listview")
+                                             .childSelector(new UiSelector().className("android.widget.ScrollView")));
 
         UiObject folderName =
             new UiObject(new UiSelector().className("android.widget.TextView").text("wa-working"));
@@ -194,8 +199,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         setCell("=SUM(B2, B3)");
         pressDPadRight();
         setCell("=SUM(C2, C3)");
-
-        formatTotal();
         resetColumnPosition(nColumns);
 
         logger.stop();
@@ -207,33 +210,28 @@ public class UiAutomation extends UxPerfUiAutomation {
         SurfaceLogger logger = new SurfaceLogger(testTag, parameters);
 
         highlightRow();
+        openCommandPalette();
         logger.start();
 
         UiObject boldButton = getUiObjectByDescription("Bold", "android.widget.ToggleButton");
         boldButton.click();
 
-        UiObject borderButton = getUiObjectByText("Borders", "android.widget.ToggleButton");
-        borderButton.click();
+        // On phones, the borderButton has a text field
+        UiObject borderButtonPhone = new UiObject(new UiSelector().text("Borders"));
+
+        // On tablets, the borderButton has a description field
+        UiObject borderButtonTablet = new UiObject(new UiSelector().description("Borders"));
+
+        if (borderButtonPhone.exists()) {
+            borderButtonPhone.click();
+        } else {
+            borderButtonTablet.click();
+        }
 
         UiObject borderStyle = getUiObjectByDescription("Top and Thick Bottom Border", "android.widget.Button");
         borderStyle.click();
 
-        pressBack();
-
-        logger.stop();
-        timingResults.put(testTag, logger.result());
-    }
-
-    private void formatTotal() throws Exception {
-        String testTag = "format_total";
-        SurfaceLogger logger = new SurfaceLogger(testTag, parameters);
-
-        highlightRow();
-        logger.start();
-
-        UiObject fontColorButton = getUiObjectByText("Font Colour", "android.widget.Button");
-        fontColorButton.click();
-        pressBack();
+        closeCommandPalette();
 
         logger.stop();
         timingResults.put(testTag, logger.result());
@@ -366,10 +364,18 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void nameWorkbook() throws Exception {
-        UiObject docTitleName = getUiObjectByResourceId("com.microsoft.office.excel:id/DocTitlePortrait",
-                                                        "android.widget.TextView");
-        docTitleName.setText("WA_Test_Book");
+        UiObject docTitleName;
 
+        // Resource IDs differ between phones and tablet devices
+        try {
+            docTitleName = getUiObjectByResourceId("com.microsoft.office.excel:id/DocTitlePortrait",
+                                                   "android.widget.TextView");
+        } catch (UiObjectNotFoundException e) {
+            docTitleName = getUiObjectByResourceId("com.microsoft.office.excel:id/DocTitle",
+                                                   "android.widget.TextView");
+        }
+
+        docTitleName.setText("WA_Test_Book");
         pressEnter();
     }
 
@@ -397,9 +403,25 @@ public class UiAutomation extends UxPerfUiAutomation {
                                                     .childSelector(new UiSelector().index(2)
                                                     .childSelector(new UiSelector().index(0)))))));
         row.click();
+    }
 
-        UiObject paletteToggleButton = getUiObjectByResourceId("com.microsoft.office.excel:id/paletteToggleButton",
-                                                               "android.widget.Button");
-        paletteToggleButton.click();
+    // Helper method for opening the command palette on non-tablet devices
+    private void openCommandPalette() throws Exception {
+        UiObject paletteToggleButton =
+            new UiObject(new UiSelector().resourceId("com.microsoft.office.excel:id/paletteToggleButton"));
+
+        if (paletteToggleButton.exists()) {
+            paletteToggleButton.click();
+        }
+    }
+
+    // Helper method for closing the command palette on non-tablet devices
+    private void closeCommandPalette() throws Exception {
+        UiObject commandPaletteHandle =
+            new UiObject(new UiSelector().resourceId("com.microsoft.office.excel:id/CommandPaletteHandle"));
+
+        if (commandPaletteHandle.exists()) {
+            commandPaletteHandle.click();
+        }
     }
 }

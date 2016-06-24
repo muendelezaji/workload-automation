@@ -41,10 +41,9 @@ class Excel(AndroidUiAutoBenchmark):
     3. Create a new spreadsheet (workbook)
     4. Specifies storage location when saving presentation
     5. Chooses a 'blank' template
-    6. Inputs data in rows and columns
-    7. Performs a SUM operation on the data
-    8. Formats the rows and columns
-    9. The workbook is renamed
+    6. Inputs row header and formats
+    7. Inputs remaining rows and performs a SUM operation on the data
+    8. The workbook is renamed
 
     --- load ---
     Loads a pre-existing test file for performance testing. A root cell in the
