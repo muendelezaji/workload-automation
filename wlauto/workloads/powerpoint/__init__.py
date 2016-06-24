@@ -32,7 +32,7 @@ class Powerpoint(AndroidUiAutoBenchmark):
             package + '/.PPTActivity']
     description = """
     A workload to perform standard productivity tasks with Microsoft PowerPoint.
-    There are two test types for this workload:
+    This workload is split into two tests:
 
     --- create ---
     Prepares a basic presentation consisting of a simple title slide
@@ -61,7 +61,10 @@ class Powerpoint(AndroidUiAutoBenchmark):
     4. Selects a transition effect type
     5. Starts a slide show and presents the slides
 
-    NOTE: This workload requires a network connection (ideally, wifi) to run.
+    NOTE: This test is turned off by default. To run this test it must first be
+    enabled in an agenda file by setting 'use_test_file' parameter to True.
+
+    This workload requires a network connection (ideally, wifi) to run.
     """
 
     parameters = [
@@ -70,13 +73,6 @@ class Powerpoint(AndroidUiAutoBenchmark):
                   If ``True``, dumpsys captures will be carried out during the
                   test run.  The output is piped to log files which are then
                   pulled from the phone.
-                  """),
-        Parameter('test_type', kind=str, mandatory=True, allowed_values=['create', 'load'],
-                  description="""
-                  The test type to run for this workload. When set to "create" the test
-                  prepares a very basic presentation consisting of a simple title slide
-                  and a single image slide. When set to "load" the test loads a .pptx file
-                  to the device and performs a slide show using transition effects.
                   """),
         Parameter('slide_template', kind=str, mandatory=False, default='Crop',
                   description="""
@@ -87,6 +83,11 @@ class Powerpoint(AndroidUiAutoBenchmark):
                   description="""
                   The title to use when creating a new presentation.
                   Note: spaces must be replaced with underscores in the title name.
+                  """),
+        Parameter('use_test_file', kind=bool, default=False,
+                  description="""
+                  If ``True``, pushes a preconfigured test file to the device
+                  used for measuring performance metrics.
                   """),
         Parameter('transition_effect', kind=str, mandatory=False, default='None',
                   description="""
@@ -112,9 +113,9 @@ class Powerpoint(AndroidUiAutoBenchmark):
         self.uiauto_params['output_dir'] = self.device.working_directory
         self.uiauto_params['output_file'] = self.output_file
         self.uiauto_params['dumpsys_enabled'] = self.dumpsys_enabled
-        self.uiauto_params['test_type'] = self.test_type
         self.uiauto_params['slide_template'] = self.slide_template
         self.uiauto_params['title_name'] = self.title_name
+        self.uiauto_params['use_test_file'] = self.use_test_file
         self.uiauto_params['transition_effect'] = self.transition_effect
         self.uiauto_params['number_of_slides'] = self.number_of_slides
 
@@ -140,10 +141,10 @@ class Powerpoint(AndroidUiAutoBenchmark):
     def setup(self, context):
         super(Powerpoint, self).setup(context)
 
-        if self.test_type == "create":
-            self.push_file(".jpg")
+        # push file types to device
+        self.push_file(".jpg")
 
-        if self.test_type == "load":
+        if self.use_test_file:
             self.push_file(".pptx")
 
         # Force a re-index of the mediaserver cache to pick up new files

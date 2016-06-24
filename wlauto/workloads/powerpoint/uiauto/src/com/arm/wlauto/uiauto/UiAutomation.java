@@ -40,7 +40,6 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void runUiAutomation() throws Exception {
         parameters = getParams();
 
-        String testType = parameters.getString("test_type");
         String templateName = parameters.getString("slide_template").replace("_", " ");
         String titleText = parameters.getString("title_name").replace("_", " ");
         String transitionEffect = parameters.getString("transition_effect");
@@ -50,23 +49,31 @@ public class UiAutomation extends UxPerfUiAutomation {
         confirmAccess();
         skipSignInView();
 
-        if (testType.equals("create")) {
-            newPresentation();
-            selectTemplate(templateName);
-            dismissToolTip();
-            editTitle(titleText);
-            clickNewSlide();
-            setSlideLayout();
-            addImage();
-            clickThumbNail(0); // go back to first slide before presenting
-            presentSlides(2);
-        }
+        // ----------------------------------------------------------------
+        // Create presentation from template
+        // ----------------------------------------------------------------
+        newPresentation();
+        selectTemplate(templateName);
+        dismissToolTip();
+        editTitle(titleText);
+        clickNewSlide();
+        setSlideLayout();
+        addImage();
+        clickThumbNail(0); // go back to first slide before presenting
+        presentSlides(2, "None");
 
-        if (testType.equals("load")) {
+        // Return to main application screen
+        pressBack();
+        pressBack();
+
+        // ----------------------------------------------------------------
+        // Load presentation from file
+        // ----------------------------------------------------------------
+        if (Boolean.parseBoolean(parameters.getString("use_test_file"))) {
             openPresentation();
             dismissToolTip();
             setTransitionEffect(transitionEffect);
-            presentSlides(numberOfSlides);
+            presentSlides(numberOfSlides, transitionEffect);
         }
 
         pressBack();
@@ -121,13 +128,27 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void openPresentation() throws Exception {
+
+        String testTag = "open_presentation";
+        SurfaceLogger logger = new SurfaceLogger(testTag, parameters);
+
         UiObject openButton = getUiObjectByText("Open", "android.widget.Button");
         openButton.click();
 
         navigateToTestFolder();
 
         UiObject fileEntry = getUiObjectByText(".pptx", "android.widget.TextView");
+
+        logger.start();
         fileEntry.click();
+
+        UiObject canvasContainer =
+            new UiObject(new UiSelector().resourceId("com.microsoft.office.powerpoint:id/CanvasContainer"));
+
+        canvasContainer.waitForExists(viewTimeout);
+
+        logger.stop();
+        timingResults.put(testTag, logger.result());
     }
 
     private void selectTemplate(final String template) throws Exception {
@@ -270,7 +291,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         applyToAllButton.click();
     }
 
-    private void presentSlides(final int numberOfSlides) throws Exception {
+    private void presentSlides(final int numberOfSlides, final String transitionEffect) throws Exception {
+
         String testTag = "present_slides";
 
         UiObject presentButton = getUiObjectByDescription("Present", "android.widget.Button");
@@ -279,14 +301,15 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         // Note: UiAutomator only allows for the time of the swipe actions and
         // not the transition time for the animations
-        SurfaceLogger logger = new SurfaceLogger(testTag, parameters);
+        String runName = testTag + "_" + transitionEffect;
+        SurfaceLogger logger = new SurfaceLogger(runName, parameters);
 
         for (int i = 0; i < numberOfSlides; ++i) {
             logger.start();
             uiDeviceSwipeLeft(20);
             logger.stop();
             sleep(5); // allow time for the transition animation to complete
-            timingResults.put(testTag + "_" + i, logger.result());
+            timingResults.put(runName + "_" + i, logger.result());
         }
     }
 }
