@@ -87,8 +87,11 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void newPresentation() throws Exception {
-        UiObject newButton = getUiObjectByText("New", "android.widget.Button");
-        newButton.click();
+        UiObject newButton = new UiObject(new UiSelector().className("android.widget.Button").text("New"));
+
+        if (newButton.exists()) {
+            newButton.click();
+        }
 
         UiObject docLocation =
             getUiObjectByText("This device > Documents", "android.widget.ToggleButton");
@@ -115,7 +118,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         storageLocation.click();
 
         UiScrollable scrollView =
-            new UiScrollable(new UiSelector().className("android.widget.ScrollView"));
+            new UiScrollable(new UiSelector().resourceId("com.microsoft.office.powerpoint:id/docsui_browse_folder_listview")
+                                             .childSelector(new UiSelector().className("android.widget.ScrollView")));
 
         UiObject folderName =
             new UiObject(new UiSelector().className("android.widget.TextView").text("wa-working"));
@@ -188,7 +192,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     private void editTitle(final String title) throws Exception {
         UiObject titleBox =
             new UiObject(new UiSelector().resourceId("com.microsoft.office.powerpoint:id/slideAirspaceEditView")
-                                         .childSelector(new UiSelector().className("android.view.ViewGroup")));
+                                         .childSelector(new UiSelector().index(0)));
         titleBox.click();
         titleBox.setText(title);
 
@@ -200,7 +204,8 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void clickThumbNail(final int index) throws Exception {
-        UiObject slideThumbnail =
+        // On phones the slideThumbnail uses view groups
+        UiObject slideThumbnailPhone =
             new UiObject(new UiSelector()
                     .resourceId("com.microsoft.office.powerpoint:id/thumbnailList")
                     .childSelector(new UiSelector().className("android.widget.HorizontalScrollView")
@@ -208,14 +213,33 @@ public class UiAutomation extends UxPerfUiAutomation {
                     .childSelector(new UiSelector().index(index)
                     .focusable(true)))));
 
-        slideThumbnail.click();
+        // On tablets the slideThumbnail uses views
+        UiObject slideThumbnailTablet =
+            new UiObject(new UiSelector()
+                    .resourceId("com.microsoft.office.powerpoint:id/thumbnailList")
+                    .childSelector(new UiSelector().className("android.widget.HorizontalScrollView")
+                    .childSelector(new UiSelector().className("android.view.View")
+                    .childSelector(new UiSelector().index(index)
+                    .focusable(true)))));
+
+        if (slideThumbnailPhone.exists()) {
+            slideThumbnailPhone.click();
+        } else {
+            slideThumbnailTablet.click();
+        }
     }
 
     private void clickNewSlide() throws Exception {
-        UiObject newSlideButton =
-            getUiObjectByResourceId("com.microsoft.office.powerpoint:id/newSlideButton",
-                                    "android.widget.Button");
-        newSlideButton.click();
+        UiObject newSlideButtonPhone =
+            new UiObject(new UiSelector().resourceId("com.microsoft.office.powerpoint:id/newSlideButton"));
+
+        UiObject newSlideButtonTablet = new UiObject(new UiSelector().text("New Slide"));
+
+        if (newSlideButtonPhone.exists()) {
+            newSlideButtonPhone.click();
+        } else {
+            newSlideButtonTablet.click();
+        }
     }
 
     private void setSlideLayout() throws Exception {
@@ -223,8 +247,19 @@ public class UiAutomation extends UxPerfUiAutomation {
         SurfaceLogger logger = new SurfaceLogger(testTag, parameters);
         logger.start();
 
-        UiObject layoutToggle = getUiObjectByDescription("Layout", "android.widget.ToggleButton");
-        layoutToggle.click();
+        // On phones, the layout button has a text field
+        UiObject layoutTogglePhone =
+            new UiObject(new UiSelector().text("Layout").className("android.widget.ToggleButton"));
+
+        // On tablets, the layout button has a description
+        UiObject layoutToggleTablet =
+            new UiObject(new UiSelector().description("Layout").className("android.widget.ToggleButton"));
+
+        if (layoutTogglePhone.exists()) {
+            layoutTogglePhone.click();
+        } else {
+            layoutToggleTablet.click();
+        }
 
         // Use blank slides for simplicity
         UiObject layoutView =
@@ -244,33 +279,94 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void addImage() throws Exception {
-        UiObject photoButton = getUiObjectByDescription("Photos", "android.widget.Button");
-        photoButton.click();
+        UiObject photoButtonPhone =
+            new UiObject(new UiSelector().description("Photos").className("android.widget.Button"));
 
-        UiObject openFromImages = getUiObjectByText("Images", "android.widget.TextView");
-        openFromImages.click();
+        if (photoButtonPhone.exists()) {
+            photoButtonPhone.click();
 
-        UiObject workloadFolder = getUiObjectByText("wa-working", "android.widget.TextView");
-        workloadFolder.click();
+            UiObject openFromImages = getUiObjectByText("Images", "android.widget.TextView");
+            openFromImages.click();
 
-        // Select the first image
-        UiObject image =
-            new UiObject(new UiSelector().className("android.widget.GridView")
+            UiObject workloadFolder = getUiObjectByText("wa-working", "android.widget.TextView");
+            workloadFolder.click();
+
+            // Select the first image
+            UiObject image =
+                new UiObject(new UiSelector().className("android.widget.GridView")
                                          .childSelector(new UiSelector()
                                          .index(0)));
-        image.click();
+            image.click();
+        } else {
+            // On tablet devices the photo button is selectable from the insert tab menu
+            UiObject insertTabTablet = getUiObjectByText("Insert", "android.widget.TextView");
+            insertTabTablet.click();
+
+            UiObject pictureButtonTablet = getUiObjectByText("Pictures", "android.widget.ToggleButton");
+            pictureButtonTablet.click();
+
+            UiObject photoButtonTablet = getUiObjectByText("Photos", "android.widget.Button");
+            photoButtonTablet.click();
+
+            UiObject listView = new UiObject(new UiSelector().resourceId("android:id/list"));
+            listView.waitForExists(viewTimeout);
+
+            UiObject internalStorage = new UiObject(new UiSelector().text("Internal storage")
+                                                                    .className("android.widget.TextView"));
+
+            // The text field 'Images' isn't reliable on tablet devices so
+            // navigate to test folder directly instead
+            if (!internalStorage.exists()) {
+                UiObject toolBarOptions =
+                    new UiObject(new UiSelector().resourceId("com.android.documentsui:id/toolbar")
+                                                 .childSelector(new UiSelector().index(2)
+                                                 .childSelector(new UiSelector().index(1))));
+                toolBarOptions.click();
+
+                UiObject showSDCard = new UiObject(new UiSelector().text("Show SD card"));
+                showSDCard.click();
+            }
+
+            internalStorage.click();
+
+            UiObject folderName =
+                new UiObject(new UiSelector().className("android.widget.TextView").text("wa-working"));
+
+            UiScrollable scrollView = new UiScrollable(new UiSelector().scrollable(true));
+
+            while (!folderName.exists()) {
+                scrollView.scrollForward();
+            }
+
+            folderName.click();
+
+            UiObject jpegImageFile = getUiObjectByText(".jpg", "android.widget.TextView");
+            jpegImageFile.click();
+        }
     }
 
     private void setTransitionEffect(final String effect) throws Exception {
-        UiObject commandPalette = getUiObjectByResourceId("com.microsoft.office.powerpoint:id/CommandPaletteHandle",
-                                                          "android.widget.ToggleButton");
-        commandPalette.click();
+        String testTag = "set_transition_effect";
+        SurfaceLogger logger = new SurfaceLogger(testTag, parameters);
 
-        UiObject homeButton = getUiObjectByText("Home", "android.widget.ToggleButton");
-        homeButton.click();
+        UiObject commandPalettePhone =
+            new UiObject(new UiSelector().resourceId("com.microsoft.office.powerpoint:id/CommandPaletteHandle"));
 
-        UiObject transitionsButton = getUiObjectByText("Transitions", "android.widget.Button");
-        transitionsButton.click();
+        if (commandPalettePhone.exists()) {
+            commandPalettePhone.click();
+
+            UiObject homeButton = getUiObjectByText("Home", "android.widget.ToggleButton");
+            homeButton.click();
+
+            UiObject transitionsButton = getUiObjectByText("Transitions", "android.widget.Button");
+            transitionsButton.click();
+        } else {
+            // On tablet devices the transition button is a menu tab
+            UiObject transitionTabTablet = getUiObjectByText("Transitions", "android.widget.TextView");
+            transitionTabTablet.click();
+        }
+
+        logger.start();
 
         UiObject transitionEffectsButton = getUiObjectByText("Transition Effects", "android.widget.ToggleButton");
         transitionEffectsButton.click();
@@ -289,6 +385,9 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         UiObject applyToAllButton = getUiObjectByText("Apply To All", "android.widget.Button");
         applyToAllButton.click();
+
+        logger.stop();
+        timingResults.put(testTag, logger.result());
     }
 
     private void presentSlides(final int numberOfSlides, final String transitionEffect) throws Exception {
