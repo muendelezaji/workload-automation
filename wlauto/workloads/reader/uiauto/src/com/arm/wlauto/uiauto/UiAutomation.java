@@ -71,8 +71,17 @@ public class UiAutomation extends UxPerfUiAutomation {
                                                    "android.widget.Button");
         continueButton.click();
 
-        // Deal with the annoying promotional Dropbox CoachMark popup
-        UiObject dropBoxcoachMark = getUiObjectByDescription("CoachMark", "android.widget.LinearLayout");
+        // Deal with popup dialog message promoting Dropbox access
+        UiObject dropBoxDialog = new UiObject(new UiSelector().text("Now you can access your Dropbox files.")
+                                                              .className("android.widget.TextView"));
+        if (dropBoxDialog.exists()) {
+            UiObject remindMeLaterButton = getUiObjectByText("Remind Me Later", "android.widget.Button");
+            remindMeLaterButton.click();
+        }
+
+        // Also deal with the Dropbox CoachMark blue hint popup
+        UiObject dropBoxcoachMark = new UiObject(new UiSelector().description("CoachMark")
+                                                                 .className("android.widget.LinearLayout"));
         if (dropBoxcoachMark.exists()) {
             tapDisplayCentre();
         }
@@ -101,9 +110,15 @@ public class UiAutomation extends UxPerfUiAutomation {
     private Timer selectLocalFilesList() throws Exception {
         // Select the local files list from the My Documents view
         UiObject localButton = getUiObjectByText("LOCAL", "android.widget.TextView");
+        UiObject directoryPath = new UiObject(new UiSelector().resourceId("com.adobe.reader:id/directoryPath"));
         Timer result = new Timer();
         result.start();
         localButton.click();
+
+        if (!directoryPath.waitForExists(TimeUnit.SECONDS.toMillis(60))) {
+            throw new UiObjectNotFoundException("Could not find any local files");
+        }
+
         long finish = SystemClock.elapsedRealtime();
         result.end();
         return result;
@@ -168,7 +183,15 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         openFile(filename);
 
-        tapDisplayCentre();
+        // On some devices the first device swipe is ignored so perform it here
+        // to prevent the first test gesture from being incorrectly logged
+        uiDeviceSwipe(Direction.DOWN, 200);
+
+        UiObject view = new UiObject(new UiSelector().resourceId("com.adobe.reader:id/pageView"));
+
+        if (!view.waitForExists(TimeUnit.SECONDS.toMillis(10))) {
+            throw new UiObjectNotFoundException("Could not find page view");
+        }
 
         while (it.hasNext()) {
             Map.Entry<String, GestureTestParams> pair = it.next();
@@ -177,8 +200,6 @@ public class UiAutomation extends UxPerfUiAutomation {
             PinchType pinch = pair.getValue().pinchType;
             int steps = pair.getValue().steps;
             int percent = pair.getValue().percent;
-
-            UiObject view = new UiObject(new UiSelector().resourceId("com.adobe.reader:id/viewPager"));
 
             String runName = String.format(testTag + "_" + pair.getKey());
             SurfaceLogger logger = new SurfaceLogger(runName, parameters);
