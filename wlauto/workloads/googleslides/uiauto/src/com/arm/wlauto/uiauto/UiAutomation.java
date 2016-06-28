@@ -36,7 +36,6 @@ import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
 
 public class UiAutomation extends UxPerfUiAutomation {
 
-    public static final String TAG = "googleslides";
     public static final String PACKAGE = "com.google.android.apps.docs.editors.slides";
     public static final String PACKAGE_ID = PACKAGE + ":id/";
     public static final String ACTIVITY_DOCLIST = "com.google.android.apps.docs.app.DocListActivity";
@@ -396,17 +395,16 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void startDumpsys(String viewName) throws Exception {
-        if (!dumpsysEnabled)
-            return;
-        initDumpsysSurfaceFlinger(PACKAGE);
-        initDumpsysGfxInfo(PACKAGE);
+        if (dumpsysEnabled) {
+            initDumpsysSurfaceFlinger(PACKAGE);
+            initDumpsysGfxInfo(PACKAGE);
+        }
     }
 
     public void endDumpsys(String viewName, String testTag) throws Exception {
-        if (!dumpsysEnabled)
-            return;
-        String dumpsysTag = TAG + "_" + testTag;
-        exitDumpsysSurfaceFlinger(PACKAGE, new File(outputDir, dumpsysTag + "_surfFlinger.log"));
-        exitDumpsysGfxInfo(PACKAGE, new File(outputDir, dumpsysTag + "_gfxInfo.log"));
+        if (dumpsysEnabled) {
+            exitDumpsysSurfaceFlinger(PACKAGE, new File(outputDir, testTag + "_surfFlinger.log"));
+            exitDumpsysGfxInfo(PACKAGE, new File(outputDir, testTag + "_gfxInfo.log"));
+        }
     }
 }

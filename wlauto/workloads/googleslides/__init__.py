@@ -20,9 +20,6 @@ from wlauto import AndroidUiAutoBenchmark, Parameter
 from wlauto.utils.types import list_of_strings
 
 
-def log_method(workload, name):
-    workload.logger.info('===== {}() ======'.format(name))
-
 class GoogleSlides(AndroidUiAutoBenchmark):
 
     name = 'googleslides'
@@ -32,21 +29,38 @@ class GoogleSlides(AndroidUiAutoBenchmark):
     as well as basic editing and playing a slideshow.
 
     Under normal circumstances, this workload should be able to run without a network connection.
+    The workload is split into two main scenarios, each starting out with the common steps 1-3.
+
+    --- load ---
+    Copying a PowerPoint presentation on to the device to test slide navigation
 
     Test description:
-    1. The workload is split into two main scenarios:
-       - A. a PowerPoint presentation is copied on to the devices to test slide navigation,
-       - B. a new file is created in the application and basic editing performed.
-    2. The application is started in offline access mode
-    3. For scenario A, the navigation test is performed while the file is in editing mode,
-       swiping forward to the next slide until the end, followed by the same action in the
-       reverse direction back to the first slide.
-    4. Afterwards, one more navigation pass through is done while in presentation mode.
-    5. In scenario B, a new PowerPoint presentation is created on-device, new slides added
-       with some text, an image from the gallery and a shape. Editing is done on the text
-       to change font size and resize the shape.
-    6. Finally, the file is saved to storage, and then deleted from the documents list and device
-       after a short delay.
+    1. Starts the app in offline access mode, and skips the welcome screen.
+    2. Opens the left-hand app drawer menu and closes it again to measure menu transitions.
+    3. Goes to the app settings page and enables PowerPoint compatibility mode. This allows
+       .PPT files to be created inside Google Slides.
+    4. A navigation test is performed while the file is in editing mode, swiping forward to
+       the next slide until the end.
+    5. Thereafter, the same action is done in the reverse direction back to the first slide.
+    6. Finally, one more forward navigation pass through is done while in presentation mode.
+
+    --- create ---
+    Creating a new file in the application and performs basic editing on it.
+
+    Test description:
+    1. Starts the app in offline access mode, and skips the welcome screen.
+    2. Opens the left-hand app drawer menu and closes it again to measure menu transitions.
+    3. Goes to the app settings page and enables PowerPoint compatibility mode. This allows
+       .PPT files to be created inside Google Slides.
+    4. Creates a new PowerPoint presentation in the app (PPT compatibility mode) with a title
+       slide and saves it to device storage.
+    5. Inserts another slide with a title and text content. The font size of the text is then
+       reduced to fit the slide.
+    6. Inserts a slide with a title and image content. The image is picked from the gallery.
+    7. Inserts the last slide and adds a shape which is dragged and resized to fit the view.
+       Some text is also entered in this final slide.
+    8. Finally, the app is navigated to the documents list, closing the file in the process.
+       The file is then deleted from the documents list and removed from the device.
     '''
 
     package = 'com.google.android.apps.docs.editors.slides'
@@ -96,7 +110,6 @@ class GoogleSlides(AndroidUiAutoBenchmark):
         self.wa_test_file = 'wa_test_{}'.format(self.local_file) if self.local_file else None
 
     def validate(self):
-        log_method(self, 'validate')
         super(GoogleSlides, self).validate()
         self.uiauto_params['dumpsys_enabled'] = self.dumpsys_enabled
         self.uiauto_params['output_dir'] = self.device.working_directory
@@ -106,7 +119,6 @@ class GoogleSlides(AndroidUiAutoBenchmark):
             self.uiauto_params['slide_count'] = self.slide_count
 
     def initialize(self, context):
-        log_method(self, 'initialize')
         super(GoogleSlides, self).initialize(context)
         self.logger.info('local_dir={}, local_file={}'.format(self.local_dir, self.local_file))
         self.logger.info('device_dir={}, wa_test_file={}'.format(self.device_dir, self.wa_test_file))
@@ -118,35 +130,21 @@ class GoogleSlides(AndroidUiAutoBenchmark):
                                           path.join(self.device_dir, self.wa_test_file),
                                           timeout=60)
 
-    def setup(self, context):
-        log_method(self, 'setup')
-        super(GoogleSlides, self).setup(context)
-
-    def run(self, context):
-        log_method(self, 'run')
-        super(GoogleSlides, self).run(context)
-
     def update_result(self, context):
-        log_method(self, 'update_result')
         super(GoogleSlides, self).update_result(context)
         self.get_metrics(context)
 
     def teardown(self, context):
-        log_method(self, 'teardown')
         super(GoogleSlides, self).teardown(context)
         self.pull_logs(context)
 
     def finalize(self, context):
-        log_method(self, 'finalize')
         super(GoogleSlides, self).finalize(context)
         if self.local_file:
             # delete pushed PPT file
             for entry in self.device.listdir(self.device_dir):
                 if entry == self.wa_test_file:
                     self.device.delete_file(path.join(self.device_dir, entry))
-
-    def wa_filename(self, filename):
-        return self.file_prefix + filename
 
     def get_metrics(self, context):
         self.device.pull_file(self.output_file, context.output_directory)

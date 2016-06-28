@@ -35,20 +35,22 @@ class Youtube(AndroidUiAutoBenchmark):
     Test description:
     1. The workload has 4 test scenarios, determined by the ``video_source`` parameter in
        the agenda file. These are ``home``, ``my_videos``, ``search``, and ``trending``.
-       - A. home - The first video from the youtube home page is played
-       - B. my_videos - A video is played from the user's account page. The user must have at
-            least one uploaded video for this to work.
-       - C. search - A search for a specific term is performed in the app. The first video in
-            the search results is played. A parameter ``search_term`` must also be provided
-            in the agenda for this to work.
-       - D. trending - The first video in the trending videos list is played
-    2. For each scenario, the following actions are performed:
-       - seeking forward in the video
-       - changing the video quality
-       - checking the info card (that shows video metadata)
-       - scrolling the list of related videos and/or comments
-       - minimising the player, then expanding it again
-       - playing the video in full screen
+       - A. home - Scrolls down once on the app's home page, then select and plays the video
+            that appears at the top of the list.
+       - B. my_videos - Goes to the 'My Videos' section of the user's account page and plays a
+            video from there. The user must have at least one uploaded video for this to work.
+       - C. search - Goes to the search view and search a specific term, then plays the first
+            video in the search results is played. The parameter ``search_term`` must also be
+            provided in the agenda for this to work.
+       - D. trending - Goes to the 'Trending Videos' section of the app, and plays the first
+            video in the trending videos list.
+       For each scenario, the subsequent test steps are performed.
+    2. Navigating to the general app settings page to disable autoplay.
+    3. Jumping forward in the video by touching the video seek bar and letting the video play
+       for a few seconds.
+    4. Expanding the info card that shows video metadata, then collapsing it again.
+    5. Scrolling down to the end of related videos and comments under the info card, and then
+       back up to the beginning. A maximum of 5 swipe actions is performed in either direction.
     '''
 
     parameters = [
