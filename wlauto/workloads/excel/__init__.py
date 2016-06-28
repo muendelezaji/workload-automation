@@ -15,6 +15,7 @@
 
 import os
 import re
+import shutil
 
 from wlauto import AndroidUiAutoBenchmark, Parameter
 from wlauto.exceptions import NotFoundError
@@ -60,9 +61,7 @@ class Excel(AndroidUiAutoBenchmark):
     5. Gestures are performed to pinch zoom in and out of the workbook
 
     Note: This test is turned off by default. To run this test it must first be
-    enabled in an agenda file by setting 'use_test_file' parameter to True. In
-    addition, the pre-existing test file 'wa_test.xlsx' located in the same
-    directory as this file must be placed in the dependencies directory.
+    enabled in an agenda file by setting 'use_test_file' parameter to True.
     """
 
     parameters = [
@@ -93,24 +92,20 @@ class Excel(AndroidUiAutoBenchmark):
         self.uiauto_params['dumpsys_enabled'] = self.dumpsys_enabled
         self.uiauto_params['use_test_file'] = self.use_test_file
 
-    def push_file(self, extension):
-        entrys = [entry for entry in os.listdir(self.dependencies_directory) if entry.endswith(extension)]
+    def push_test_file(self, filename):
+        if not os.path.isfile(os.path.join(self.dependencies_directory, filename)):
+            filepath = os.path.join(os.path.dirname(__file__), filename)
+            shutil.copy(filepath, self.dependencies_directory)
 
-        # Check for workload dependencies before proceeding
-        if len(entrys) != 1:
-            raise NotFoundError("This workload requires one {} file in {}".format(extension,
-                                self.dependencies_directory))
-        else:
-            for entry in entrys:
-                self.device.push_file(os.path.join(self.dependencies_directory, entry),
-                                      os.path.join(self.device.working_directory, entry),
-                                      timeout=300)
+        self.device.push_file(os.path.join(self.dependencies_directory, filename),
+                              os.path.join(self.device.working_directory, filename),
+                              timeout=300)
 
     def setup(self, context):
         super(Excel, self).setup(context)
 
         if self.use_test_file:
-            self.push_file(".xlsx")
+            self.push_test_file("wa_test.xlsx")
 
     def update_result(self, context):
         super(Excel, self).update_result(context)
