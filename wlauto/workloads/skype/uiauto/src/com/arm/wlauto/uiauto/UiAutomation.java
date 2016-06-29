@@ -38,7 +38,6 @@ import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
 public class UiAutomation extends UxPerfUiAutomation {
 
-    public static final String TAG = "skype";
     public static final String PACKAGE = "com.skype.raider";
     public static final String PACKAGE_ID = "com.skype.raider:id/";
     public static final String TEXT_VIEW = "android.widget.TextView";
@@ -141,7 +140,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void voiceCallTest(int duration) throws Exception {
-        String testTag = "voice_call";
+        String testTag = "call_voice";
         Timer timer = new Timer();
         timer.start();
         makeCall(duration, false, testTag);
@@ -150,7 +149,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void videoCallTest(int duration) throws Exception {
-        String testTag = "video_call";
+        String testTag = "call_video";
         Timer timer = new Timer();
         timer.start();
         makeCall(duration, true, testTag);
@@ -159,7 +158,6 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void makeCall(int duration, boolean video, String testTag) throws Exception {
-        String dumpsysTag = TAG + "_" + testTag;
         if (video && dumpsysEnabled) {
             initDumpsysSurfaceFlinger(PACKAGE);
             initDumpsysGfxInfo(PACKAGE);
@@ -173,8 +171,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         sleep(duration);
 
         if (video && dumpsysEnabled) {
-            exitDumpsysSurfaceFlinger(PACKAGE, new File(outputDir, dumpsysTag + "_surfFlinger.log"));
-            exitDumpsysGfxInfo(PACKAGE, new File(outputDir, dumpsysTag + "_gfxInfo.log"));
+            exitDumpsysSurfaceFlinger(PACKAGE, new File(outputDir, testTag + "_surfFlinger.log"));
+            exitDumpsysGfxInfo(PACKAGE, new File(outputDir, testTag + "_gfxInfo.log"));
         }
     }
 }

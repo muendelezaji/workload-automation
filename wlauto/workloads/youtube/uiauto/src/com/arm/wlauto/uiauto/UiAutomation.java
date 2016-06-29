@@ -40,7 +40,6 @@ import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
 
 public class UiAutomation extends UxPerfUiAutomation {
 
-    public static final String TAG = "youtube";
     public static final String CLASS_BUTTON = "android.widget.Button";
     public static final String CLASS_FRAME_LAYOUT = "android.widget.FrameLayout";
     public static final String CLASS_TEXT_VIEW = "android.widget.TextView";
@@ -228,9 +227,8 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     protected void endDumpsys(String testTag) throws Exception {
         if (dumpsysEnabled) {
-            String dumpsysTag = TAG + "_" + testTag;
-            exitDumpsysSurfaceFlinger(packageName, new File(outputDir, dumpsysTag + "_surfFlinger.log"));
-            exitDumpsysGfxInfo(packageName, new File(outputDir, dumpsysTag + "_gfxInfo.log"));
+            exitDumpsysSurfaceFlinger(packageName, new File(outputDir, testTag + "_surfFlinger.log"));
+            exitDumpsysGfxInfo(packageName, new File(outputDir, testTag + "_gfxInfo.log"));
         }
     }
 
@@ -252,12 +250,5 @@ public class UiAutomation extends UxPerfUiAutomation {
     protected void endMeasurements(String testTag) throws Exception {
         endTimer(testTag);
         endDumpsys(testTag);
-    }
-
-    protected void dumpViews(String tag) throws Exception {
-        String fileName = TAG + "_view_hierarchy_" + tag + ".log";
-        String filePath = new File(outputDir, fileName).toString();
-        // String filePath = outputDir + File.separator + fileName;
-        UiDevice.getInstance().dumpWindowHierarchy(filePath);
     }
 }
